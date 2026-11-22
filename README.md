@@ -31,5 +31,7 @@ The route `/<id>`, the API, storage, stats and live updates need no changes.
 
 ## Release
 
-Actions → **Release** with a version `X.Y.Z` tags the commit and builds
-`ghcr.io/kajgm/cardstracker:X.Y.Z`. Deploying it is a tag bump in kajgm/homelab.
+Actions → **Release** on `main`: pick `patch`, `minor` or `major` to bump the
+latest tag, or type an exact version. It tags the commit, publishes a GitHub
+release with generated notes and builds `ghcr.io/kajgm/cardstracker:X.Y.Z` and
+`:X.Y`. Deploying it is a tag bump in kajgm/homelab.
