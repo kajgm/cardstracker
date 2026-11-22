@@ -1,0 +1,10 @@
+{
+  "name": "@cards/engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Game-agnostic core: the game contract, replay, save checks, stats",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

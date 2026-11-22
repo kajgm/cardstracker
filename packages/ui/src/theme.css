@@ -1,0 +1,94 @@
+/* Design tokens. Light on :root, dark via the OS setting. Mirrors the design proposal. */
+:root {
+  --bg: #f2f5f3;
+  --surface: #ffffff;
+  --surface-2: #e8eeeb;
+  --ink: #14201b;
+  --ink-2: #4a5c55;
+  --ink-3: #6b7e76;
+  --line: #d6dfdb;
+  --line-2: #b5c4be;
+  --felt: #0e4a37;
+  --felt-2: #0a3a2b;
+  --felt-ink: #eef6f2;
+  --felt-ink-2: #a8cbbc;
+  --felt-red: #ff9aa8;
+  --card-face: #fbfdfc;
+  --card-ink: #14201b;
+  --card-red: #c4122f;
+  --card-blue: #1d4f9e;
+  --hearts: #c4122f; --on-hearts: #ffffff; --hearts-soft: #fbe8eb;
+  --tenone: #1d4f9e; --on-tenone: #ffffff; --tenone-soft: #e7eefa;
+  --table: #12694d; --on-table: #ffffff; --table-soft: #e1f1e9;
+  --gold: #946609; --gold-soft: #f6ecd5;
+  --good: #17784a; --good-soft: #e1f2e9;
+  --bad: #b3261e; --bad-soft: #fbe9e7;
+  --warn: #8a5206; --warn-soft: #fbf0db;
+  --scrim: rgba(8, 20, 16, .42);
+  --shadow: rgba(10, 30, 22, .2);
+  --on-p: #ffffff;
+  --p1: #0f8587; --p2: #b8730b; --p3: #7448c0; --p4: #2a66cc;
+  --p5: #c03f78; --p6: #4d7c0f; --p7: #b4442a; --p8: #5b6b78;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-num: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --accent: var(--table); --on-accent: var(--on-table); --accent-soft: var(--table-soft);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a120f; --surface: #111c18; --surface-2: #182621;
+    --ink: #e2ebe7; --ink-2: #a1b4ac; --ink-3: #7f938a; --line: #223129; --line-2: #354a41;
+    --felt: #0f4232; --felt-2: #0b3326;
+    --hearts: #ff6b80; --on-hearts: #2b0710; --hearts-soft: #36181e;
+    --tenone: #85a9ff; --on-tenone: #0b1a3d; --tenone-soft: #17223a;
+    --table: #4cc79a; --on-table: #05271b; --table-soft: #13302a;
+    --gold: #e2b55a; --gold-soft: #302815;
+    --good: #57c98f; --good-soft: #13291f;
+    --bad: #ff8278; --bad-soft: #35191a;
+    --warn: #f1ad55; --warn-soft: #33260f;
+    --scrim: rgba(0, 0, 0, .55); --shadow: rgba(0, 0, 0, .5); --on-p: #0a120f;
+    --p1: #3cc4c6; --p2: #f0a93e; --p3: #b48eff; --p4: #72a2ff;
+    --p5: #ff7fb3; --p6: #9bd35a; --p7: #ff8a6b; --p8: #a7b6c2;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.4 var(--f-body);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Shared primitives the kit and the views use. */
+.page { max-width: 40rem; margin: 0 auto; padding: 14px max(14px, env(safe-area-inset-left)) calc(96px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right)); display: flex; flex-direction: column; gap: 14px; }
+.lbl { font: 600 11px/1.3 var(--f-body); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); margin: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; }
+.grow { flex: 1; min-width: 0; }
+.mut { color: var(--ink-3); font-size: 13px; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--ink-3)); flex: none; }
+.btn { min-height: 46px; padding: 0 18px; border-radius: 13px; border: 1px solid var(--line-2); background: var(--surface); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--ink); }
+.btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.btn:disabled { opacity: .45; cursor: default; }
+.chip { min-width: 40px; min-height: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface); cursor: pointer; font: 600 17px var(--f-num); color: var(--ink-2); }
+.chip.on { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.chip:disabled { border-style: dashed; background: var(--surface-2); color: var(--ink-3); text-decoration: line-through; cursor: not-allowed; }
+.mcard { width: 28px; height: 38px; border-radius: 5px; background: var(--card-face); color: var(--card-ink); border: 1px solid var(--line-2); display: inline-grid; place-items: center; font: 700 16px/1 var(--f-num); flex: none; }
+.mcard.red { color: var(--card-red); }
+.mcard.blue { color: var(--card-blue); }
+.actionbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; gap: 10px; padding: 12px max(14px, env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); background: var(--surface); border-top: 1px solid var(--line); }
+.actionbar > * { max-width: 40rem; }
+.actionbar .btn.pri { flex: 1; }
+.error { background: var(--bad-soft); color: var(--bad); border-radius: 12px; padding: 10px 12px; margin: 0; }
+.g-hearts { --accent: var(--hearts); --on-accent: var(--on-hearts); --accent-soft: var(--hearts-soft); }
+.g-tenone { --accent: var(--tenone); --on-accent: var(--on-tenone); --accent-soft: var(--tenone-soft); }

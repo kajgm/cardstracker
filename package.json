@@ -1,0 +1,33 @@
+{
+  "name": "cardstracker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Score tracker for card games at cards.kajgm.com/<game>",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*",
+    "games",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev -w @cards/server",
+    "dev:client": "npm run dev -w @cards/client",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json && npm run typecheck -w @cards/client",
+    "build": "npm run build -w @cards/client && npm run build -w @cards/server",
+    "start": "npm run start -w @cards/server"
+  },
+  "engines": {
+    "node": ">=26"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.1"
+  }
+}

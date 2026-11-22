@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["packages/engine/src", "games/**/*.ts", "server/src", "server/test", "vitest.config.ts"],
+  "exclude": ["games/**/ui/**", "games/ui.ts", "**/node_modules", "**/dist"]
+}
