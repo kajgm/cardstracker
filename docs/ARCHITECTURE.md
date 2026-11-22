@@ -77,7 +77,7 @@ and keeps 14. Owner-only `GET /api/export` dumps everything as JSON
 
 Like stocktracker, minus moving parts:
 
-- Release: Actions → Release (`X.Y.Z`) → `image.yml` → `ghcr.io/kajgm/cardstracker:X.Y.Z` and `:X.Y`.
+- Release: Actions → Release on `main` (bump patch/minor/major from the latest tag, or an exact version) → `image.yml` → `ghcr.io/kajgm/cardstracker:X.Y.Z` and `:X.Y`. Same workflow as weathertracker and stocktracker.
 - `k8s/apps/cardstracker/` in kajgm/homelab: namespace, Deployment (1 replica,
   Recreate, uid 1000, :3000, readOnlyRootFilesystem + `/tmp` emptyDir, `/data`
   PVC `local-path-retain`), Service `cardstracker:80 → 3000`, default-deny

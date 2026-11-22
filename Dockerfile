@@ -1,5 +1,5 @@
 # One image: Node serves the built SPA, /api and /socket.io.
-#   docker build --build-arg APP_VERSION=0.1.0 -t cardstracker .
+#   docker build --build-arg APP_VERSION=1.0.0 -t cardstracker .
 #   docker run -p 3000:3000 -v cards-data:/data cardstracker
 
 # Build on the host's native arch. The server bundle is plain JavaScript (SQLite
