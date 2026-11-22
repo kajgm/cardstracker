@@ -1,0 +1,16 @@
+{
+  "name": "@cards/games",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "One folder per game: rules.ts (pure, shared) and ui/ (client only)",
+  "exports": {
+    ".": "./index.ts",
+    "./ui": "./ui.ts",
+    "./hearts/rules": "./hearts/rules.ts",
+    "./tenone/rules": "./tenone/rules.ts"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}
