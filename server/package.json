@@ -1,0 +1,21 @@
+{
+  "name": "@cards/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "REST /api, Socket.IO rooms and SQLite; serves the built client",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
+    "build": "esbuild src/server.ts --bundle --platform=node --target=node26 --format=cjs --outfile=dist/server.cjs --external:bufferutil --external:utf-8-validate --sourcemap",
+    "start": "node --env-file-if-exists=.env --enable-source-maps dist/server.cjs"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "socket.io-client": "^4.8.4"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "socket.io": "^4.8.4",
+    "zod": "^4.6.7"
+  }
+}
