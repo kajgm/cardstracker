@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cardstracker",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "-w", "@cards/server"],
+      "port": 3000
+    }
+  ]
+}
