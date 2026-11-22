@@ -1,0 +1,10 @@
+{
+  "name": "Cards",
+  "short_name": "Cards",
+  "description": "Score sheets for Hearts, 10-1 and more",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0e4a37",
+  "theme_color": "#0e4a37",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
