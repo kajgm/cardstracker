@@ -1,21 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { gameUis } from '@cards/games/ui';
 import { updateReady } from './socket';
-import { api, getGuestName, setGuestName } from './api';
+import { getGuestName, setGuestName } from './api';
 
-// No Access login (public bypass): ask once for a name to record who entered what.
-const askName = ref(false);
+// No logins: ask once for a name to record who entered what.
 const guestInput = ref(getGuestName());
-onMounted(async () => {
-  try {
-    const me = await api.me();
-    askName.value = !me.email && !me.guest;
-  } catch {
-    // Offline or server error: the pages show their own error states.
-  }
-});
+const askName = ref(!guestInput.value);
 function saveName() {
   if (!guestInput.value.trim()) return;
   setGuestName(guestInput.value);

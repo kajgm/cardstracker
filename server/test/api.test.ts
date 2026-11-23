@@ -9,7 +9,7 @@ import { createApp } from '../src/app';
 import type { GameDto } from '../src/store';
 
 const db = openDb(':memory:');
-const { http, io } = createApp({ db, version: '9.9.9', ownerEmail: 'owner@example.com' });
+const { http, io } = createApp({ db, version: '9.9.9', adminToken: 'sekrit-token' });
 let base = '';
 
 beforeAll(async () => {
@@ -21,10 +21,10 @@ afterAll(() => {
   http.close();
 });
 
-async function call<T = unknown>(method: string, path: string, body?: unknown, email = 'ana@example.com') {
+async function call<T = unknown>(method: string, path: string, body?: unknown, extra: Record<string, string> = {}) {
   const res = await fetch(base + path, {
     method,
-    headers: { 'content-type': 'application/json', 'cf-access-authenticated-user-email': email },
+    headers: { 'content-type': 'application/json', 'x-guest-name': 'Ana', ...extra },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   return { status: res.status, body: (res.status === 204 ? null : await res.json()) as T };
@@ -45,14 +45,10 @@ describe('api', () => {
     expect(await (await fetch(`${base}/version.json`)).json()).toEqual({ version: '9.9.9' });
   });
 
-  it('reads the Access email', async () => {
-    expect((await call('GET', '/api/me')).body).toMatchObject({ email: 'ana@example.com', owner: false });
-  });
-
-  it('records a guest name when there is no Access login, never as owner', async () => {
+  it('records a guest name and ignores the old Access header', async () => {
     const headers = { 'content-type': 'application/json', 'x-guest-name': encodeURIComponent(' Zoë\n ') };
     const me = await (await fetch(`${base}/api/me`, { headers })).json();
-    expect(me).toMatchObject({ email: null, guest: 'Zoë', owner: false });
+    expect(me).toEqual({ guest: 'Zoë', owner: false });
     const playerIds = await seatFour();
     const res = await fetch(`${base}/api/games`, {
       method: 'POST',
@@ -60,11 +56,19 @@ describe('api', () => {
       body: JSON.stringify({ type: 'hearts', playerIds, firstDealer: 0 }),
     });
     expect(((await res.json()) as GameDto).createdBy).toBe('guest:Zoë');
-    const owner = { ...headers, 'x-guest-name': 'owner@example.com' };
-    expect((await fetch(`${base}/api/export`, { headers: owner })).status).toBe(403);
-    // An Access login wins over a guest header.
-    const both = { ...headers, 'cf-access-authenticated-user-email': 'ana@example.com' };
-    expect(await (await fetch(`${base}/api/me`, { headers: both })).json()).toMatchObject({ email: 'ana@example.com', guest: null });
+    // The Access header is spoofable on a public site, so it labels nothing.
+    const spoof = { ...headers, 'cf-access-authenticated-user-email': 'ana@example.com' };
+    expect(await (await fetch(`${base}/api/me`, { headers: spoof })).json()).toEqual({ guest: 'Zoë', owner: false });
+  });
+
+  it('hides Access-era emails and never sends player emails', async () => {
+    const playerIds = await seatFour();
+    const { id } = (await call<GameDto>('POST', '/api/games', { type: 'hearts', playerIds, firstDealer: 0 })).body;
+    db.prepare("UPDATE games SET created_by = 'old@example.com' WHERE id = ?").run(id);
+    db.prepare("UPDATE players SET email = 'mom@example.com' WHERE name = 'Mom'").run();
+    const game = (await call<GameDto>('GET', `/api/games/${id}`)).body;
+    expect(game.createdBy).toBeNull();
+    expect(JSON.stringify(game) + JSON.stringify((await call('GET', '/api/players')).body)).not.toContain('@');
   });
 
   it('keeps one roster entry per name', async () => {
@@ -99,7 +103,7 @@ describe('api', () => {
     });
     expect(saved.status).toBe(200);
     expect(saved.body.rounds).toEqual([
-      { n: 0, phase: 'result', entry: { queen: 1, hearts: [3, 4, 2, 4] }, enteredBy: 'ana@example.com' },
+      { n: 0, phase: 'result', entry: { queen: 1, hearts: [3, 4, 2, 4] }, enteredBy: 'guest:Ana' },
     ]);
     expect((await pushed).version).toBe(saved.body.version);
     socket.close();
@@ -183,7 +187,8 @@ describe('api', () => {
   it('refuses unknown games and keeps export for the owner', async () => {
     expect((await call('GET', '/api/stats/poker')).status).toBe(404);
     expect((await call('GET', '/api/export')).status).toBe(403);
-    expect((await call('GET', '/api/export', undefined, 'owner@example.com')).status).toBe(200);
+    expect((await call('GET', '/api/export', undefined, { authorization: 'Bearer wrong-token' })).status).toBe(403);
+    expect((await call('GET', '/api/export', undefined, { authorization: 'Bearer sekrit-token' })).status).toBe(200);
   });
 });
 

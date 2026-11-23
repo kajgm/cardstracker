@@ -1,5 +1,6 @@
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { createServer, type Server as HttpServer } from 'node:http';
+import { timingSafeEqual } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { Server as IoServer } from 'socket.io';
@@ -14,16 +15,19 @@ export interface AppOptions {
   /** Built client (client/dist). Not served when missing, e.g. in dev and tests. */
   clientDir?: string;
   version?: string;
-  /** May export everything and purge games. */
-  ownerEmail?: string;
-  /** Stands in for the proxy's header when running locally. Never set it in production. */
-  devUserEmail?: string;
+  /** `Authorization: Bearer <token>` may export everything and remove games. Unset: nobody can. */
+  adminToken?: string;
 }
 
-// The authenticating proxy in front of the app sets this header and must be the only
-// way in, so it can be trusted here. Any route that bypasses the proxy must strip it.
-const ACCESS_HEADER = 'cf-access-authenticated-user-email';
+// The site is public: there is no login, only a self-chosen name recorded as an audit label.
 const GUEST_HEADER = 'x-guest-name';
+
+export function bearerMatches(header: string | undefined, token: string | undefined): boolean {
+  if (!token || !header?.startsWith('Bearer ')) return false;
+  const a = Buffer.from(header.slice(7));
+  const b = Buffer.from(token);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 /** The client URI-encodes the name so it survives as a header value. */
 export function guestName(raw: string | undefined): string | undefined {
@@ -56,17 +60,11 @@ export function createApp(opts: AppOptions): { http: HttpServer; io: IoServer } 
   app.disable('x-powered-by');
   app.use(express.json({ limit: '64kb' }));
 
-  const emailOf = (req: Request): string | undefined =>
-    (req.header(ACCESS_HEADER) || opts.devUserEmail)?.toLowerCase();
-  // Without an Access login (a bypass policy), a self-chosen name is recorded instead.
-  // It is only an audit label: the "guest:" prefix keeps it from ever matching the owner.
   const userOf = (req: Request): string | undefined => {
-    const email = emailOf(req);
-    if (email) return email;
     const name = guestName(req.header(GUEST_HEADER));
     return name ? `guest:${name}` : undefined;
   };
-  const isOwner = (req: Request) => !!opts.ownerEmail && emailOf(req) === opts.ownerEmail.toLowerCase();
+  const isOwner = (req: Request) => bearerMatches(req.header('authorization'), opts.adminToken);
   const push = (game: store.GameDto) => io.to(`game:${game.id}`).emit('game:state', game);
   const parse = <T>(schema: z.ZodType<T>, value: unknown): T => {
     const r = schema.safeParse(value);
@@ -84,20 +82,14 @@ export function createApp(opts: AppOptions): { http: HttpServer; io: IoServer } 
 
   const api = express.Router();
   api.get('/me', (req, res) => {
-    const email = emailOf(req);
-    res.json({
-      email: email ?? null,
-      guest: email ? null : (guestName(req.header(GUEST_HEADER)) ?? null),
-      player: store.playerForEmail(db, email) ?? null,
-      owner: isOwner(req),
-    });
+    res.json({ guest: guestName(req.header(GUEST_HEADER)) ?? null, owner: isOwner(req) });
   });
   api.get('/players', (_req, res) => {
     res.json(store.listPlayers(db));
   });
   api.post('/players', (req, res) => {
-    const body = parse(z.object({ name: z.string(), email: z.string().email().optional() }), req.body);
-    res.status(201).json(store.addPlayer(db, body.name, body.email));
+    const body = parse(z.object({ name: z.string() }), req.body);
+    res.status(201).json(store.addPlayer(db, body.name));
   });
   api.get('/games', (req, res) => {
     const q = parse(
