@@ -22,7 +22,7 @@ diagrams and phone mockups: https://claude.ai/artifact/X2dkNWFerfcc8VScq5y36C
 | Path | Package | What it is |
 |---|---|---|
 | `packages/engine` | `@cards/engine` | The game contract (`defineGame`), `replay`, `checkSave`, stats. No Vue, no zod. |
-| `packages/ui` | `@cards/ui` | Vue kit: AppBar, StandingsStrip, ScoreGrid, Sheet, Stepper, PlayerPick, CountPerPlayer, BidChips, TricksVsBids, RulesForm; `theme.css` tokens. |
+| `packages/ui` | `@cards/ui` | Vue kit: AppBar, TitleCard, PlayingCard, StandingsStrip, ScoreGrid, Sheet, CountUp, Stepper, PlayerPick, CountPerPlayer, BidChips, TricksVsBids, RulesForm; `theme.css` tokens. |
 | `games/` | `@cards/games` | `index.ts` rules registry (server + client), `ui.ts` UI registry (client only), one folder per game. |
 | `server/` | `@cards/server` | Express 5, Socket.IO, SQLite, backups. Bundled by esbuild into `dist/server.cjs`. |
 | `client/` | `@cards/client` | Vite SPA: `/`, `/:game`, `/:game/new`, `/:game/:id`. |
@@ -40,9 +40,25 @@ and never `@cards/games/ui`.
 - `phases`: e.g. Hearts `[result]`, 10-1 `[bids, tricks]`; each has `validate()`
 - `roundInfo(ctx)`, `score(entry, ctx)`, `isOver(progress)`, optional `stats`
 
-`games/<id>/ui/index.ts` exports a `GameUi`: glyph, ink, accent, one editor
-per phase, optional score-grid cell, `startEntry`, `configFields`,
-`roundLabel`. Editors are mostly kit components wired together.
+`games/<id>/ui/index.ts` exports a `GameUi`: glyph, ink, accent, the title
+card (`hand` of up to four cards, `blurb`, `facts`, `about`), one editor per
+phase, optional score-grid cell and `legend`, optional `flourish` (an overlay
+when a round lands, e.g. a moon), `startEntry`, `configFields`, `roundLabel`.
+Editors are mostly kit components wired together.
+
+## Look and motion
+
+- Title cards: a hand of SVG-drawn cards on baize (`PlayingCard`: pips, a
+  large suit on aces, a drawn bust on queens and kings). They deal in on load
+  and fan out on press.
+- Sheets spring up and close on a downward drag or flick. Saves are
+  optimistic: the round lands at once and rolls back (sheet reopened) if the
+  server refuses. New rows drop in, totals count up, standings slide to their
+  new order, the leader's star pops.
+- Phones: Wake Lock while a game is open, `navigator.vibrate` on save/undo
+  (Android), 44px targets, no double-tap zoom delay, a pinned round column when
+  the grid scrolls sideways, skeletons while loading, "Reconnecting…" while the
+  socket is down. `prefers-reduced-motion` turns all of it off.
 
 Adding a game: write `rules.ts` + `rules.test.ts`, write `ui/`, add one line
 to `games/index.ts` and one to `games/ui.ts`, release.

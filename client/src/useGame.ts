@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue';
+import { computed, onBeforeUnmount, ref, toRaw, watch, type Ref } from 'vue';
 import { replay, type StoredGame } from '@cards/engine';
 import { getGame } from '@cards/games';
 import { gameUis } from '@cards/games/ui';
@@ -55,14 +55,22 @@ export function useGame(id: Ref<string>) {
     socket.off('connect', join);
   });
 
-  /** Returns true when saved; on a conflict the newer game is shown and false returned. */
-  async function run(action: (version: number) => Promise<GameDto>): Promise<boolean> {
+  /**
+   * Returns true when saved; on a conflict the newer game is shown and false returned.
+   * `optimistic` is applied to the sheet at once and rolled back if the server refuses.
+   */
+  async function run(action: (version: number) => Promise<GameDto>, optimistic?: (g: GameDto) => GameDto): Promise<boolean> {
     if (!game.value) return false;
     notice.value = undefined;
+    const before = game.value;
+    const guess = optimistic?.(before);
+    if (guess) game.value = guess;
     try {
-      accept(await action(game.value.version));
+      accept(await action(before.version));
       return true;
     } catch (err) {
+      // Roll back our own guess, never a newer state a socket pushed meanwhile.
+      if (guess && toRaw(game.value) === guess) game.value = before;
       if (err instanceof ApiError && err.status === 409 && err.game) {
         game.value = err.game;
         notice.value = 'Someone else saved this game a moment ago. Check the sheet, then try again.';
@@ -82,8 +90,15 @@ export function useGame(id: Ref<string>) {
     error,
     notice,
     load,
-    save: (n: number, phase: string, entry: unknown) =>
-      run((version) => api.saveRound(id.value, n, { phase, entry, version })),
-    undo: (n: number) => run((version) => api.undo(id.value, n, version)),
+    save: (n: number, phase: string, entry: Record<string, unknown>) =>
+      run(
+        (version) => api.saveRound(id.value, n, { phase, entry, version }),
+        (g) => ({ ...g, rounds: [...g.rounds.filter((r) => r.n !== n), { n, phase, entry, enteredBy: null }].sort((a, b) => a.n - b.n) }),
+      ),
+    undo: (n: number) =>
+      run(
+        (version) => api.undo(id.value, n, version),
+        (g) => ({ ...g, rounds: g.rounds.filter((r) => r.n !== n) }),
+      ),
   };
 }
