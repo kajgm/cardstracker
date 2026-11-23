@@ -5,7 +5,6 @@ export interface Player {
   id: number;
   name: string;
   color: string;
-  email: string | null;
 }
 export interface SeatedPlayer extends Player {
   seat: number;
@@ -96,7 +95,7 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   const headers: Record<string, string> = {};
   if (body !== undefined) headers['content-type'] = 'application/json';
   const guest = getGuestName();
-  // Encoded because header values must be ASCII; the server ignores it under an Access login.
+  // Encoded because header values must be ASCII.
   if (guest) headers['x-guest-name'] = encodeURIComponent(guest);
   try {
     res = await fetch(`/api${path}`, {
@@ -114,8 +113,6 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 }
 
 export const api = {
-  me: () =>
-    call<{ email: string | null; guest: string | null; player: Player | null; owner: boolean }>('GET', '/me'),
   players: () => call<Player[]>('GET', '/players'),
   addPlayer: (name: string) => call<Player>('POST', '/players', { name }),
   games: (q: { type?: string; status?: 'active' | 'finished' } = {}) =>
