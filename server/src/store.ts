@@ -280,6 +280,8 @@ export interface GameSummary {
   round: number;
   firstDealer: number;
   endedEarly: boolean;
+  /** Score that ends the game, for games that have one. */
+  target: number | null;
   /** What is being played now; null once the game is over. */
   next: { n: number; info: RoundInfo; dealer: string } | null;
   players: { name: string; color: string; total: number; place: number }[];
@@ -312,6 +314,7 @@ export function listGames(db: Db, filter: { type?: string; status?: string; limi
       round: (next?.n ?? view?.rounds.length ?? 0) + 1,
       firstDealer: dto.firstDealer,
       endedEarly: dto.endedEarly,
+      target: typeof (dto.config as { target?: unknown }).target === 'number' ? (dto.config as { target: number }).target : null,
       next: next ? { n: next.n, info: next.info, dealer: dto.players[next.dealer]?.name ?? '' } : null,
       players: dto.players.map((p) => ({
         name: p.name,
