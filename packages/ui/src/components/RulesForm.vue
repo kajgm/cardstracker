@@ -53,7 +53,7 @@ small { display: block; font-weight: 400; font-size: 13px; color: var(--ink-3); 
 select, input[type='number'] { min-height: 40px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); padding: 0 10px; font: inherit; max-width: 55%; }
 input[type='number'] { width: 84px; }
 .tog { appearance: none; width: 48px; height: 28px; border-radius: 999px; background: var(--line-2); position: relative; cursor: pointer; flex: none; margin: 0; }
-.tog::after { content: ''; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); transition: left 0.15s; }
+.tog::after { content: ''; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); transition: transform .15s var(--ease); }
 .tog:checked { background: var(--accent); }
-.tog:checked::after { left: 24px; background: var(--on-accent); }
+.tog:checked::after { transform: translateX(20px); background: var(--on-accent); }
 </style>

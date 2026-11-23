@@ -1,4 +1,12 @@
-/* Design tokens. Light on :root, dark via the OS setting. Mirrors the design proposal. */
+/* Hallmark · checked: 2026-11-23 · genre: playful (inferred) · shape: app screen
+ * floor: 72 FAIL before, 0 open after waivers · fixed: 48, 63, 67, 10a, 34, 39a, 54, 7a
+ * waive 67: the cards.kajgm.com wordmark keeps its small spaced capitals (the owner picked W4)
+ * waive 26a, 27: :focus-visible and prefers-reduced-motion live once, here, for every component
+ * waive 62: the hidden states are Vue <Transition> enter/leave classes, applied only while animating
+ * waive 56: the sheet handle sticks inside the sheet's own scroll container, not the page
+ * built: the project · redesign: polish · v2.0.0 */
+
+/* Design tokens. Light on :root, dark via the OS setting. */
 :root {
   --bg: #f2f5f3;
   --surface: #ffffff;
@@ -23,7 +31,16 @@
   --table: #12694d; --on-table: #ffffff; --table-soft: #e1f1e9;
   --gold: #946609; --on-gold: #ffffff; --gold-soft: #f6ecd5; --gold-ink: #e2b55a;
   --live: #ff6b6b;
-  --felt-panel: rgba(3, 22, 15, .42); --felt-rule: rgba(255, 255, 255, .2);
+  --felt-panel: rgba(3, 22, 15, .42); --felt-panel-hover: rgba(3, 22, 15, .6); --felt-rule: rgba(255, 255, 255, .2);
+  --felt-lattice: rgba(255, 255, 255, .04); --felt-track: rgba(255, 255, 255, .1); --felt-shade: rgba(0, 0, 0, .35);
+  /* Card backs and the drawn court figures: real cards look the same day and night. */
+  --card-back: #8f0c22; --card-back-2: #12346b; --card-weave: rgba(255, 255, 255, .16);
+  --court-ink: #14201b; --court-sky: #f6efe0; --court-blue: #1d4f9e; --court-red: #c4122f; --court-red-dark: #8f0c22;
+  --court-gold: #e0a526; --court-gold-dark: #946609; --court-skin: #f2d3b6; --court-hair: #2b1d14;
+  --court-beard: #6b4423; --court-beard-dark: #4a2e16; --court-green: #17784a; --court-steel: #8a99a3; --court-ermine: #fbfdfc;
+  /* The moon (or any flourish) overlay. */
+  --flourish-scrim: rgba(8, 20, 16, .55); --flourish-scrim-2: rgba(8, 20, 16, .2);
+  --flourish-glow: rgba(226, 181, 90, .7); --flourish-ink: #f5fbf8; --flourish-shadow: rgba(0, 0, 0, .5);
   --good: #17784a; --good-soft: #e1f2e9;
   --bad: #b3261e; --bad-soft: #fbe9e7;
   --warn: #8a5206; --warn-soft: #fbf0db;
@@ -61,10 +78,10 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
+html, body { margin: 0; height: 100%; overflow-x: clip; }
 /* No double-tap zoom delay; pinch zoom still works. */
 html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
-html.sheet-open { overflow: hidden; }
+html.sheet-open { overflow: clip; }
 body {
   background: var(--bg);
   color: var(--ink);
@@ -78,7 +95,7 @@ a { color: var(--accent); }
 
 /* Shared primitives the kit and the views use. */
 .page { max-width: 40rem; margin: 0 auto; padding: 14px max(14px, env(safe-area-inset-left)) calc(96px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right)); display: flex; flex-direction: column; gap: 14px; }
-.lbl { font: 600 11px/1.3 var(--f-body); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); margin: 0; }
+.lbl { font: 600 13px/1.3 var(--f-body); color: var(--ink-2); margin: 0; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
 .row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); }
 .row:first-child { border-top: 0; }
@@ -90,7 +107,8 @@ a { color: var(--accent); }
 .btn, .chip { transition: transform .12s var(--ease), background-color .15s, color .15s, border-color .15s; }
 .btn:active:not(:disabled), .chip:active:not(:disabled) { transform: scale(.96); }
 .btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
-.btn:disabled { opacity: .45; cursor: default; }
+.btn:disabled { background: var(--surface-2); color: var(--ink-3); border-color: var(--line); cursor: not-allowed; }
+.btn.pri:disabled { background: var(--surface-2); color: var(--ink-3); }
 .chip { min-width: 44px; min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface); cursor: pointer; font: 600 17px var(--f-num); color: var(--ink-2); }
 .chip.on { background: var(--accent); color: var(--on-accent); border-color: transparent; }
 .chip:disabled { border-style: dashed; background: var(--surface-2); color: var(--ink-3); text-decoration: line-through; cursor: not-allowed; }

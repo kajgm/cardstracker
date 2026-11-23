@@ -71,6 +71,6 @@ export interface GameUi {
   /** Custom ScoreGrid cell; default shows the round's points. */
   cell?: Component;
   configFields: ConfigField[];
-  /** Banner text: 'Pass right · Dad deals'. */
+  /** Banner text: 'Pass right, Dad deals'. */
   roundLabel(info: RoundInfo, dealerName: string): string;
 }

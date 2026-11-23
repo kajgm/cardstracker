@@ -24,7 +24,7 @@ defineProps<{ records: RecordLine[] }>();
 <style scoped>
 .recs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .rec { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 10px 12px 11px; color: var(--ink); text-decoration: none; }
-.rl { font: 600 10.5px/1.3 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.rl { font: 600 12px/1.3 var(--f-body); color: var(--ink-3); }
 .rv { font-size: 30px; font-weight: 700; line-height: 1; }
 .rh { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
 .rh .dot { width: 8px; height: 8px; }

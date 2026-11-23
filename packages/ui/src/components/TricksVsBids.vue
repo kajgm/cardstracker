@@ -47,7 +47,7 @@ function set(seat: number, value: number) {
 .tricks { display: flex; flex-direction: column; }
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .line { display: grid; grid-template-columns: minmax(0, 1fr) 32px auto 40px; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
-.hdr { padding: 0 0 4px; font: 600 10px var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.hdr { padding: 0 0 4px; font: 600 12px/1.3 var(--f-body); color: var(--ink-3); }
 .hdr span:not(:first-child) { text-align: center; }
 .hdr span:last-child { text-align: right; }
 .who { display: flex; align-items: center; gap: 8px; font-weight: 500; white-space: nowrap; }

@@ -132,7 +132,7 @@ async function start() {
 .pill.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); font-weight: 600; }
 .pill.add { border-style: dashed; min-height: 40px; }
 .icon { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; }
-.icon:disabled { opacity: .35; cursor: default; }
+.icon:disabled { background: var(--surface-2); color: var(--ink-3); border-color: var(--line); cursor: not-allowed; }
 .bench { display: flex; flex-wrap: wrap; gap: 8px; }
 .addform { display: flex; gap: 8px; }
 .addform input { flex: 1; min-width: 0; min-height: 46px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); padding: 0 12px; font: inherit; }

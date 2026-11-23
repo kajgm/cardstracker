@@ -27,7 +27,7 @@ const ui: GameUi = {
   facts: ['to 100', 'Lowest wins'],
   about:
     'Pass three cards, then try not to win any hearts or the queen of spades. Each heart costs a point and the queen costs 13. Take every heart and the queen in one hand and you shoot the moon: everyone else takes 26, or you take 26 off your own score. The game ends when someone reaches 100, and the lowest score wins.',
-  legend: '♛ took the queen of spades · ☾ shot the moon',
+  legend: '♛ took the queen of spades. ☾ shot the moon.',
   flourish: (entry, players) => {
     const seat = moonShooter(entry as Partial<HeartsEntry>);
     const name = players.find((p) => p.seat === seat)?.name;
@@ -49,7 +49,7 @@ const ui: GameUi = {
       ],
     },
   ],
-  roundLabel: (info, dealer) => `${PASS_LABEL[String(info.pass)] ?? ''} · ${dealer} deals`,
+  roundLabel: (info, dealer) => `${PASS_LABEL[String(info.pass)] ?? ''}, ${dealer} deals`,
 };
 
 export default ui;

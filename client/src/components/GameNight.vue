@@ -23,7 +23,7 @@ const night = computed(() => {
 <template>
   <div class="panel gn">
     <div class="head">
-      <p class="date">{{ date }} · {{ games.length }} games</p>
+      <p class="date">{{ date }}, {{ games.length }} games</p>
       <p class="win">
         <svg class="crown" viewBox="0 0 20 14" aria-hidden="true"><path d="M1.5 13 .5 3.2 5.6 7.4 10 .6 14.4 7.4 19.5 3.2 18.5 13Z" /></svg>
         {{ listNames(night.names) }} {{ night.names.length > 1 ? 'shared the night' : 'won the night' }}

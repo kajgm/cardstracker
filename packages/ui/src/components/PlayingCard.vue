@@ -121,30 +121,30 @@ const face = computed(() => (props.card.rank === 'Q' || props.card.rank === 'K' 
 <style scoped>
 .pc { display: block; width: 100%; height: 100%; color: var(--card-ink); --suit: var(--card-ink); }
 .pc.red { --suit: var(--card-red); }
-.face { fill: var(--card-face); stroke: var(--card-edge, rgba(20, 32, 27, .14)); stroke-width: 1; }
+.face { fill: var(--card-face); stroke: var(--card-edge); stroke-width: 1; }
 .ix text { font: 700 12.5px var(--f-num); fill: var(--suit); }
 .pc > path, .ix path { fill: var(--suit); }
 
 /* The court figures use fixed card colors in both themes: real cards don't change at night. */
-.frame { fill: none; stroke: #14201b; stroke-width: .8; }
-.sky { fill: #f6efe0; }
-.robe { fill: var(--robe, #1d4f9e); }
-.red .robe { --robe: #c4122f; }
-.trim { fill: none; stroke: #e0a526; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.skin { fill: #f2d3b6; }
-.hair { fill: #2b1d14; }
-.ink { fill: #14201b; }
-.lips { fill: none; stroke: #c4122f; stroke-width: .9; stroke-linecap: round; }
-.gold { fill: #e0a526; stroke: #946609; stroke-width: .5; stroke-linejoin: round; }
-.gem { fill: #c4122f; }
-.red .gem { fill: #1d4f9e; }
-.stem { stroke: #17784a; stroke-width: 1.2; stroke-linecap: round; }
-.rose { fill: #c4122f; stroke: #8f0c22; stroke-width: .6; }
-.ermine { fill: #fbfdfc; stroke: #14201b; stroke-width: .5; stroke-dasharray: .6 2.4; }
-.beard { fill: #6b4423; }
-.beard-line { fill: none; stroke: #4a2e16; stroke-width: .9; stroke-linecap: round; }
-.cross { stroke: #e0a526; stroke-width: 1.4; stroke-linecap: round; }
-.band { fill: #946609; }
-.blade { stroke: #8a99a3; stroke-width: 1.8; stroke-linecap: round; }
-.hilt { stroke: #946609; stroke-width: 1.8; stroke-linecap: round; }
+.frame { fill: none; stroke: var(--court-ink); stroke-width: .8; }
+.sky { fill: var(--court-sky); }
+.robe { fill: var(--robe, var(--court-blue)); }
+.red .robe { --robe: var(--court-red); }
+.trim { fill: none; stroke: var(--court-gold); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.skin { fill: var(--court-skin); }
+.hair { fill: var(--court-hair); }
+.ink { fill: var(--court-ink); }
+.lips { fill: none; stroke: var(--court-red); stroke-width: .9; stroke-linecap: round; }
+.gold { fill: var(--court-gold); stroke: var(--court-gold-dark); stroke-width: .5; stroke-linejoin: round; }
+.gem { fill: var(--court-red); }
+.red .gem { fill: var(--court-blue); }
+.stem { stroke: var(--court-green); stroke-width: 1.2; stroke-linecap: round; }
+.rose { fill: var(--court-red); stroke: var(--court-red-dark); stroke-width: .6; }
+.ermine { fill: var(--court-ermine); stroke: var(--court-ink); stroke-width: .5; stroke-dasharray: .6 2.4; }
+.beard { fill: var(--court-beard); }
+.beard-line { fill: none; stroke: var(--court-beard-dark); stroke-width: .9; stroke-linecap: round; }
+.cross { stroke: var(--court-gold); stroke-width: 1.4; stroke-linecap: round; }
+.band { fill: var(--court-gold-dark); }
+.blade { stroke: var(--court-steel); stroke-width: 1.8; stroke-linecap: round; }
+.hilt { stroke: var(--court-gold-dark); stroke-width: 1.8; stroke-linecap: round; }
 </style>

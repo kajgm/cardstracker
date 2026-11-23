@@ -14,10 +14,10 @@ const ranked = (g: GameSummary) => [...g.players].sort((a, b) => a.place - b.pla
     <RouterLink v-for="g in games" :key="g.id" :to="`/${g.type}/${g.id}`" class="row item">
       <span class="grow">
         <b>
-          {{ showType === false ? '' : `${getGame(g.type)?.name ?? g.type} · ` }}
+          {{ showType === false ? '' : `${getGame(g.type)?.name ?? g.type}: ` }}
           {{ g.status === 'finished' ? `${ranked(g).filter((p) => p.place === 1).map((p) => p.name).join(' & ')} won` : `round ${g.round}` }}
         </b>
-        <span class="mut">{{ ranked(g).map((p) => `${p.name} ${p.total}`).join(' · ') }}</span>
+        <span class="mut">{{ ranked(g).map((p) => `${p.name} ${p.total}`).join(', ') }}</span>
       </span>
       <span class="mut when">{{ day(g.finishedAt ?? g.createdAt) }}</span>
     </RouterLink>
