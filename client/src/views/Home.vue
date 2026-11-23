@@ -190,6 +190,9 @@ const night = computed(() => lastNight(finished.value));
       </Region>
     </div>
   </main>
+  <footer class="foot">
+    <a href="https://github.com/kajgm/cardstracker" target="_blank" rel="noopener">Source code on GitHub</a>
+  </footer>
 </template>
 
 <style scoped>
@@ -207,7 +210,7 @@ const night = computed(() => lastNight(finished.value));
 .live:has(> :only-child) { grid-auto-columns: 100%; }
 
 /* Body: one column on phones, two on wide screens. */
-.home { max-width: 72rem; margin: 0 auto; display: flex; flex-direction: column; gap: 32px; padding: 24px max(16px, env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+.home { max-width: 72rem; margin: 0 auto; display: flex; flex-direction: column; gap: 32px; padding: 24px max(16px, env(safe-area-inset-right)) 40px max(16px, env(safe-area-inset-left)); }
 .col { display: contents; }
 .sec { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .new { order: 1; } .board { order: 2; } .night { order: 3; } .recs { order: 4; } .recent { order: 5; }
@@ -223,6 +226,10 @@ const night = computed(() => lastNight(finished.value));
 .again-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .again-t b { font-size: 15px; }
 .again-t small { font-size: 13px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.foot { max-width: 72rem; margin: 0 auto; padding: 16px max(16px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); border-top: 1px solid var(--line); font-size: 13px; }
+.foot a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
+@media (hover: hover) { .foot a:hover { color: var(--ink-2); } }
 
 .fade-enter-active, .fade-leave-active { transition: opacity .3s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
