@@ -16,13 +16,12 @@ export interface AppOptions {
   version?: string;
   /** May export everything and purge games. */
   ownerEmail?: string;
-  /** Stands in for the Access header when running locally. Never set it in the cluster. */
+  /** Stands in for the proxy's header when running locally. Never set it in production. */
   devUserEmail?: string;
 }
 
-// cloudflared validates the Access JWT (access.required) and the NetworkPolicy only
-// lets cloudflared reach this pod, so the header can be trusted here. Any LAN route
-// added later must strip Cf-Access-* headers.
+// The authenticating proxy in front of the app sets this header and must be the only
+// way in, so it can be trusted here. Any route that bypasses the proxy must strip it.
 const ACCESS_HEADER = 'cf-access-authenticated-user-email';
 
 const roundBody = z.object({ phase: z.string(), entry: z.unknown(), version: z.number().int() });

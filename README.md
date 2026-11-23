@@ -9,7 +9,7 @@ Needs Node 26 (`.nvmrc`).
 
 ```sh
 npm install
-cp server/.env.template server/.env   # sets DEV_USER_EMAIL in place of Cloudflare Access
+cp server/.env.template server/.env   # sets DEV_USER_EMAIL in place of the auth proxy
 npm run dev:server                    # API + sockets on :3000, data in server/data/
 npm run dev:client                    # Vite on :5173, proxies /api and /socket.io
 ```
@@ -35,4 +35,5 @@ The route `/<id>`, the API, storage, stats and live updates need no changes.
 Actions → **Release** on `main`: pick `patch`, `minor` or `major` to bump the
 latest tag, or type an exact version. It tags the commit, publishes a GitHub
 release with generated notes and builds `ghcr.io/kajgm/cardstracker:X.Y.Z` and
-`:X.Y`. Deploying it is a tag bump in kajgm/homelab.
+`:X.Y`. What a host needs to run it: Deployment in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
