@@ -1,33 +1,48 @@
 <script setup lang="ts">
+import type { CardFace } from '../game-ui';
+import PlayingCard from './PlayingCard.vue';
 
-// Baize with a slow lamp light drifting over faint, drifting suits.
-// Only transforms and opacity animate, so phones composite it cheaply; still with reduced motion.
+// Baize with a few cards floating at different depths, mostly to the right so
+// text on the left stays clear. Only transform animates; still with reduced motion.
 withDefaults(defineProps<{ tag?: string }>(), { tag: 'div' });
-</script>
 
-<script lang="ts">
-import { SUIT_PATHS } from '../suits';
-
-const tile =
-  `<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'>` +
-  (
-    [
-      ['spades', 8, 10, 1.4, 'rgba(255,255,255,.07)', -12],
-      ['hearts', 58, 6, 1.3, 'rgba(255,154,168,.11)', 10],
-      ['clubs', 32, 54, 1.4, 'rgba(255,255,255,.07)', 8],
-      ['diamonds', 78, 58, 1.2, 'rgba(255,154,168,.11)', -6],
-    ] as const
-  )
-    .map(([s, x, y, k, fill, r]) => `<path d='${SUIT_PATHS[s]}' fill='${fill}' transform='translate(${x} ${y}) rotate(${r} ${5 * k} ${5 * k}) scale(${k})'/>`)
-    .join('') +
-  `</svg>`;
-const pipTile = `url("data:image/svg+xml,${encodeURIComponent(tile)}")`;
+interface Floater {
+  x: string;
+  y: string;
+  /** Width in px; height follows the card's 66 × 92 shape. */
+  w: number;
+  r: number;
+  /** Seconds per drift; negative delays start each card mid-drift. */
+  d: number;
+  delay: number;
+  face?: CardFace;
+  back?: 1 | 2;
+  far?: boolean;
+}
+const cards: Floater[] = [
+  { x: '30%', y: '6%', w: 22, r: 10, d: 12, delay: -4, back: 2, far: true },
+  { x: '46%', y: '68%', w: 26, r: -18, d: 10, delay: -7, back: 1, far: true },
+  { x: '58%', y: '10%', w: 46, r: -12, d: 11, delay: -2, face: { rank: 'A', suit: 'hearts' } },
+  { x: '68%', y: '60%', w: 30, r: 8, d: 12, delay: -5, back: 2, far: true },
+  { x: '78%', y: '26%', w: 54, r: 14, d: 13, delay: -9, face: { rank: 'Q', suit: 'spades' } },
+  { x: '90%', y: '0%', w: 34, r: -24, d: 9, delay: -3, back: 1, far: true },
+  { x: '92%', y: '66%', w: 40, r: 22, d: 14, delay: -6, face: { rank: 'K', suit: 'hearts' } },
+];
 </script>
 
 <template>
   <component :is="tag" class="felt">
-    <span class="lay lamp" aria-hidden="true" />
-    <span class="lay pips" aria-hidden="true" :style="{ backgroundImage: pipTile }" />
+    <span class="cards" aria-hidden="true">
+      <span
+        v-for="(c, i) in cards"
+        :key="i"
+        class="fc"
+        :class="{ far: c.far, back: c.back, b2: c.back === 2 }"
+        :style="{ left: c.x, top: c.y, '--w': c.w, '--r': `${c.r}deg`, animationDuration: `${c.d}s`, animationDelay: `${c.delay}s` }"
+      >
+        <PlayingCard v-if="c.face" :card="c.face" />
+      </span>
+    </span>
     <slot />
   </component>
 </template>
@@ -36,21 +51,31 @@ const pipTile = `url("data:image/svg+xml,${encodeURIComponent(tile)}")`;
 .felt {
   position: relative; isolation: isolate; overflow: hidden; color: var(--felt-ink); background-color: var(--felt);
   background-image:
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, .04) 0 1px, transparent 1px 15px),
-    repeating-linear-gradient(-45deg, rgba(255, 255, 255, .04) 0 1px, transparent 1px 15px);
+    repeating-linear-gradient(45deg, var(--felt-lattice) 0 1px, transparent 1px 15px),
+    repeating-linear-gradient(-45deg, var(--felt-lattice) 0 1px, transparent 1px 15px);
 }
-.lay { position: absolute; pointer-events: none; z-index: -1; }
-.lamp {
-  width: max(360px, 72%); aspect-ratio: 1; left: 50%; top: 32%; translate: -50% -50%;
-  background: radial-gradient(closest-side, rgba(255, 233, 184, .18), rgba(255, 233, 184, .06) 52%, transparent);
-  animation: lamp 18s var(--ease) infinite alternate;
+/* The cards sit behind the content, under a veil that keeps the left side readable. */
+.cards { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.cards::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--felt) 10%, transparent 70%); opacity: .7; }
+.fc {
+  position: absolute; width: calc(var(--w) * 1px); aspect-ratio: 66 / 92; border-radius: 6px; transform: rotate(var(--r));
+  filter: drop-shadow(0 10px 12px var(--felt-shade));
+  animation: float ease-in-out infinite alternate;
 }
-@keyframes lamp {
-  0% { transform: translateX(-24%) scale(.94); opacity: .8; }
-  50% { transform: translate(3%, 7%) scale(1.06); opacity: 1; }
-  100% { transform: translateX(24%) scale(.96); opacity: .9; }
+.fc.far { opacity: .55; filter: blur(1px) drop-shadow(0 6px 8px var(--felt-shade)); }
+.fc.back {
+  background:
+    repeating-linear-gradient(45deg, var(--card-weave) 0 1.5px, transparent 1.5px 5px),
+    repeating-linear-gradient(-45deg, var(--card-weave) 0 1.5px, transparent 1.5px 5px),
+    var(--back, var(--card-back));
+  box-shadow: inset 0 0 0 3px var(--card-face);
 }
-.pips { inset: -96px 0 0 -96px; background-size: 96px 96px; animation: drift 64s linear infinite; }
-@keyframes drift { to { transform: translate(96px, 96px); } }
-@media (prefers-reduced-motion: reduce) { .lay { animation: none; } }
+.fc.b2 { --back: var(--card-back-2); }
+@keyframes float {
+  from { transform: translateY(8px) rotate(var(--r)); }
+  to { transform: translateY(-12px) rotate(calc(var(--r) + 8deg)); }
+}
+/* Bigger header, bigger cards. */
+@media (min-width: 900px) { .fc { width: calc(var(--w) * 1.6px); } }
+@media (prefers-reduced-motion: reduce) { .fc { animation: none; } }
 </style>
