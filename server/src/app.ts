@@ -23,6 +23,20 @@ export interface AppOptions {
 // The authenticating proxy in front of the app sets this header and must be the only
 // way in, so it can be trusted here. Any route that bypasses the proxy must strip it.
 const ACCESS_HEADER = 'cf-access-authenticated-user-email';
+const GUEST_HEADER = 'x-guest-name';
+
+/** The client URI-encodes the name so it survives as a header value. */
+export function guestName(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  let name: string;
+  try {
+    name = decodeURIComponent(raw);
+  } catch {
+    return undefined;
+  }
+  name = name.replace(/[\p{C}]/gu, '').trim().slice(0, 24);
+  return name || undefined;
+}
 
 const roundBody = z.object({ phase: z.string(), entry: z.unknown(), version: z.number().int() });
 const newGameBody = z.object({
@@ -42,9 +56,17 @@ export function createApp(opts: AppOptions): { http: HttpServer; io: IoServer } 
   app.disable('x-powered-by');
   app.use(express.json({ limit: '64kb' }));
 
-  const userOf = (req: Request): string | undefined =>
+  const emailOf = (req: Request): string | undefined =>
     (req.header(ACCESS_HEADER) || opts.devUserEmail)?.toLowerCase();
-  const isOwner = (req: Request) => !!opts.ownerEmail && userOf(req) === opts.ownerEmail.toLowerCase();
+  // Without an Access login (a bypass policy), a self-chosen name is recorded instead.
+  // It is only an audit label: the "guest:" prefix keeps it from ever matching the owner.
+  const userOf = (req: Request): string | undefined => {
+    const email = emailOf(req);
+    if (email) return email;
+    const name = guestName(req.header(GUEST_HEADER));
+    return name ? `guest:${name}` : undefined;
+  };
+  const isOwner = (req: Request) => !!opts.ownerEmail && emailOf(req) === opts.ownerEmail.toLowerCase();
   const push = (game: store.GameDto) => io.to(`game:${game.id}`).emit('game:state', game);
   const parse = <T>(schema: z.ZodType<T>, value: unknown): T => {
     const r = schema.safeParse(value);
@@ -62,8 +84,13 @@ export function createApp(opts: AppOptions): { http: HttpServer; io: IoServer } 
 
   const api = express.Router();
   api.get('/me', (req, res) => {
-    const email = userOf(req);
-    res.json({ email: email ?? null, player: store.playerForEmail(db, email) ?? null, owner: isOwner(req) });
+    const email = emailOf(req);
+    res.json({
+      email: email ?? null,
+      guest: email ? null : (guestName(req.header(GUEST_HEADER)) ?? null),
+      player: store.playerForEmail(db, email) ?? null,
+      owner: isOwner(req),
+    });
   });
   api.get('/players', (_req, res) => {
     res.json(store.listPlayers(db));
