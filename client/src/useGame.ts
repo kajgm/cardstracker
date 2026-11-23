@@ -18,7 +18,13 @@ export function useGame(id: Ref<string>) {
   const ui = computed(() => (game.value ? gameUis[game.value.type] : undefined));
   const stored = computed<StoredGame | undefined>(() =>
     game.value
-      ? { config: game.value.config, seats: game.value.players.length, firstDealer: game.value.firstDealer, rounds: game.value.rounds }
+      ? {
+          config: game.value.config,
+          seats: game.value.players.length,
+          firstDealer: game.value.firstDealer,
+          rounds: game.value.rounds,
+          endedEarly: game.value.endedEarly,
+        }
       : undefined,
   );
   const view = computed(() => (rules.value && stored.value ? replay(rules.value, stored.value) : undefined));
@@ -95,6 +101,9 @@ export function useGame(id: Ref<string>) {
         (version) => api.saveRound(id.value, n, { phase, entry, version }),
         (g) => ({ ...g, rounds: [...g.rounds.filter((r) => r.n !== n), { n, phase, entry, enteredBy: null }].sort((a, b) => a.n - b.n) }),
       ),
+    /** Ends the game now; the standings after the last complete round stand. */
+    end: () => run((version) => api.end(id.value, version)),
+    resume: () => run((version) => api.resume(id.value, version)),
     undo: (n: number) =>
       run(
         (version) => api.undo(id.value, n, version),
