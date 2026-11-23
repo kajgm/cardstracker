@@ -11,7 +11,7 @@ import { buzz, useWakeLock } from '../device';
 const route = useRoute();
 const router = useRouter();
 const id = computed(() => String(route.params.id));
-const { game, rules, ui, stored, view, error, notice, save, undo } = useGame(id);
+const { game, rules, ui, stored, view, error, notice, save, undo, end, resume } = useGame(id);
 
 const players = computed<TablePlayer[]>(() => game.value?.players ?? []);
 const nameOf = (seat: number) => players.value.find((p) => p.seat === seat)?.name ?? '';
@@ -22,7 +22,10 @@ const target = computed(() => (typeof game.value?.config.target === 'number' ? g
 const meta = computed(() => {
   const v = view.value;
   if (!v || !ui.value) return [];
-  if (v.over) return ['Final', `${v.rounds.length} rounds`];
+  if (v.over) {
+    const n = v.rounds.filter((r) => r.complete).length;
+    return [v.endedEarly ? 'Ended early' : 'Final', `${n} ${n === 1 ? 'round' : 'rounds'}`];
+  }
   const next = v.next!;
   const of = typeof next.info.of === 'number' ? ` of ${next.info.of}` : '';
   return [`Round ${next.n + 1}${of}`, ui.value.roundLabel(next.info, nameOf(next.dealer)), ...(target.value ? [`to ${target.value}`] : [])];
@@ -115,6 +118,22 @@ async function undoLast() {
   if (await undo(lastRound.value.n)) buzz(8);
 }
 
+// ---- end early, two taps; resume undoes it ----
+const armedEnd = ref(false);
+const leaderNames = computed(() => leaders.value.map(sideName).join(' & '));
+async function endNow() {
+  if (!armedEnd.value) {
+    armedEnd.value = true;
+    setTimeout(() => (armedEnd.value = false), 5000);
+    return;
+  }
+  armedEnd.value = false;
+  if (await end()) buzz([12, 40, 12]);
+}
+async function resumeGame() {
+  if (await resume()) buzz(8);
+}
+
 // ---- flourish: a moon, say, gets a moment on every phone at the table ----
 const flourish = ref<Flourish>();
 let seen = -1;
@@ -187,7 +206,7 @@ const statText = (s: StatLine) =>
       <section v-if="view.over" class="panel final">
         <span class="crown" aria-hidden="true">♛</span>
         <b>{{ winners }} {{ view.winners.length > 1 ? 'tie for the win' : 'wins' }}</b>
-        <span class="mut">{{ view.rounds.length }} rounds</span>
+        <span class="mut">{{ view.endedEarly ? `Ended early after ${played} ${played === 1 ? 'round' : 'rounds'}` : `${view.rounds.length} rounds` }}</span>
       </section>
 
       <StandingsStrip :entries="standings" />
@@ -202,12 +221,17 @@ const statText = (s: StatLine) =>
         :legend="ui?.legend"
         @edit="correct"
       />
-      <p class="mut">Tap a round to correct it.</p>
+      <div class="under">
+        <p class="mut">Tap a round to correct it.</p>
+        <button v-if="!view.over && played" type="button" class="endbtn" :class="{ armed: armedEnd }" @click="endNow">
+          {{ armedEnd ? `End now? ${leaderNames} ${leaders.length > 1 ? 'share the win' : 'wins'}` : 'End game now' }}
+        </button>
+      </div>
 
       <template v-if="view.over && stats.length">
         <h2 class="lbl">This game</h2>
         <div class="panel">
-          <div v-for="s in stats" :key="s.label" class="row">
+          <div v-for="s in stats" :key="s.label" class="row stat">
             <span class="grow">{{ s.label }}</span><span class="mut">{{ statText(s) }}</span>
           </div>
         </div>
@@ -216,7 +240,8 @@ const statText = (s: StatLine) =>
   </main>
 
   <div v-if="game && view" class="actionbar">
-    <button v-if="lastRound" type="button" class="btn" @click="undoLast">
+    <button v-if="view.endedEarly" type="button" class="btn" @click="resumeGame">Resume game</button>
+    <button v-else-if="lastRound" type="button" class="btn" @click="undoLast">
       {{ armedUndo ? `Undo round ${lastRound.n + 1}?` : 'Undo' }}
     </button>
     <button v-if="view.next" type="button" class="btn pri" @click="enterNext">
@@ -259,6 +284,13 @@ const statText = (s: StatLine) =>
 .final { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px; text-align: center; }
 .final b { font: 800 24px var(--f-display); }
 .final { animation: rise .4s var(--ease) both; }
+.stat { flex-wrap: wrap; row-gap: 2px; }
+.stat .grow { flex: 1 0 auto; min-width: auto; }
+.stat .mut { text-align: right; margin-left: auto; }
+.under { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.under .mut { margin: 0; }
+.endbtn { min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-2); background: transparent; color: var(--ink-2); font: 600 13.5px var(--f-body); cursor: pointer; transition: background-color .2s, color .2s, border-color .2s; }
+.endbtn.armed { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
 .crown { color: var(--gold); font-size: 30px; line-height: 1; animation: crown .7s .15s var(--spring) both; }
 @keyframes crown { from { transform: translateY(-40px) rotate(-20deg); opacity: 0; } }
 .offline { display: flex; align-items: center; gap: 10px; margin: 0; padding: 9px 12px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: 14px; }

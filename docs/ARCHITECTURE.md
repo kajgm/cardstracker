@@ -22,7 +22,7 @@ diagrams and phone mockups: https://claude.ai/artifact/X2dkNWFerfcc8VScq5y36C
 | Path | Package | What it is |
 |---|---|---|
 | `packages/engine` | `@cards/engine` | The game contract (`defineGame`), `replay`, `checkSave`, stats. No Vue, no zod. |
-| `packages/ui` | `@cards/ui` | Vue kit: AppBar, TitleCard, PlayingCard, StandingsStrip, ScoreGrid, Sheet, CountUp, Stepper, PlayerPick, CountPerPlayer, BidChips, TricksVsBids, RulesForm; `theme.css` tokens. |
+| `packages/ui` | `@cards/ui` | Vue kit: AppBar, Felt, TitleCard, PlayingCard, Leaderboard, SuitIcon, StandingsStrip, ScoreGrid, Sheet, CountUp, Stepper, PlayerPick, CountPerPlayer, BidChips, TricksVsBids, RulesForm; `theme.css` tokens. |
 | `games/` | `@cards/games` | `index.ts` rules registry (server + client), `ui.ts` UI registry (client only), one folder per game. |
 | `server/` | `@cards/server` | Express 5, Socket.IO, SQLite, backups. Bundled by esbuild into `dist/server.cjs`. |
 | `client/` | `@cards/client` | Vite SPA: `/`, `/:game`, `/:game/new`, `/:game/:id`. |
@@ -77,6 +77,25 @@ Exact bid scores 10 + bid, a miss 0 (option: 1 per trick, +10 if exact).
 Option: Newfie poker on the 1-card hand (card on your forehead, bid without
 looking); it changes the round label and editor hint, not the scoring.
 
+## Home page
+
+A felt header (lamp light drifting over faint suits) holds the wordmark, a
+"N live" pill, a greeting and the games in progress as small scoreboards; a
+game is live when a round was saved in the last 15 minutes. Below: "same table
+again" (rematch of the last finished game), the game tiles, the leaderboard
+(all games or one, with each player's last five finishes), the last game night
+(two or more games finished the same evening; before 6am counts as the night
+before, in the phone's time zone), records and recent games. One column on
+phones, two from 900px. It refreshes every minute while open.
+
+## Ending early
+
+Any game with a complete round can be ended before its target or last hand
+(`POST /api/games/:id/end`). `games.ended_early` is set; replay treats the
+game as over after its last complete round and sets a half-entered round
+aside. It counts like any finished game. `DELETE /api/games/:id/end` resumes
+it.
+
 ## Data
 
 Tables: `players`, `games` (config JSON, version), `seats`, `rounds`
@@ -84,6 +103,10 @@ Tables: `players`, `games` (config JSON, version), `seats`, `rounds`
 Totals are never stored: `replay()` derives them, on the server and on every
 phone. Every write sends the version it was based on; a stale one gets `409`
 plus the current game. Saves are pushed to the game's Socket.IO room.
+
+Stats: `GET /api/stats/:type` (or `all`: wins and win rate across games,
+no averages) and `GET /api/records` (win streak, each game's best final score,
+each game's own stats summed; rate stats need 10 rounds).
 
 Backups: once a day the server writes `VACUUM INTO /data/backups/cards-YYYY-MM-DD.db`
 and keeps 14. Owner-only `GET /api/export` dumps everything as JSON

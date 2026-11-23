@@ -55,6 +55,34 @@ describe('replay', () => {
   });
 });
 
+describe('ending early', () => {
+  const r = (n: number, guess: number[], actual: number[]) => ({ n, phase: 'actual', entry: { guess, actual } });
+  const half = { n: 1, phase: 'guess', entry: { guess: [0, 0, 0] } };
+
+  it('finishes on the last complete round and sets a half-entered one aside', () => {
+    const v = replay(toy, { ...game([r(0, [1, 1, 1], [3, 0, 0]), half]), endedEarly: true });
+    expect(v.over).toBe(true);
+    expect(v.endedEarly).toBe(true);
+    expect(v.rounds).toHaveLength(1);
+    expect(v.next).toBeUndefined();
+    expect(v.winners).toEqual([0]);
+  });
+
+  it('needs one complete round and ignores the flag once the game ends on its own', () => {
+    expect(replay(toy, { ...game([half]), endedEarly: true }).over).toBe(false);
+    const full = replay(toy, { ...game([r(0, [1, 1, 1], [1, 1, 1]), r(1, [0, 0, 0], [3, 0, 0]), r(2, [2, 1, 0], [2, 1, 0])]), endedEarly: true });
+    expect(full.over).toBe(true);
+    expect(full.endedEarly).toBe(false);
+  });
+
+  it('refuses new rounds and the set-aside round, but allows corrections', () => {
+    const g = { ...game([r(0, [1, 1, 1], [3, 0, 0]), { ...half, n: 1 }]), endedEarly: true };
+    expect(checkSave(toy, g, { n: 1, phase: 'actual', entry: { guess: [0, 0, 0], actual: [3, 0, 0] } }).ok).toBe(false);
+    expect(checkSave(toy, { ...g, rounds: g.rounds.slice(0, 1) }, { n: 1, phase: 'guess', entry: { guess: [0, 0, 0] } }).ok).toBe(false);
+    expect(checkSave(toy, g, { n: 0, phase: 'actual', entry: { guess: [1, 1, 1], actual: [1, 1, 1] } }).ok).toBe(true);
+  });
+});
+
 describe('rank', () => {
   it('shares places on a tie', () => {
     expect(rank([10, 20, 10], true).map((s) => [s.side, s.place])).toEqual([[0, 1], [2, 1], [1, 3]]);

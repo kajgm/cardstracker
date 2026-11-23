@@ -13,6 +13,8 @@ export interface StoredGame<Cfg = unknown, Entry = unknown> {
   seats: number;
   firstDealer: Seat;
   rounds: StoredRound<Entry>[];
+  /** Ended by the players before the target or the last hand; standings after the last complete round stand. */
+  endedEarly?: boolean;
 }
 
 export interface RoundView<Entry = unknown> {
@@ -54,6 +56,8 @@ export interface GameView<Entry = unknown> {
   over: boolean;
   /** Winning sides (more than one on a tie). Empty until the game is over. */
   winners: number[];
+  /** Over because the players ended it, not because the rules say so. */
+  endedEarly: boolean;
 }
 
 function sidesFor<Cfg>(rules: GameRules<Cfg, unknown>, seats: number, config: Cfg): number[] {
@@ -111,6 +115,12 @@ export function replay<Cfg, Entry>(
     });
     if (over) break;
   }
+  // Ended early: the game stops after its last complete round; a half-entered one is set aside.
+  const endedEarly = !over && !!game.endedEarly && history.length > 0;
+  if (endedEarly) {
+    over = true;
+    while (rounds.length && !rounds[rounds.length - 1].complete) rounds.pop();
+  }
 
   const standings = rank(totals, rules.lowWins);
   let next: NextStep | undefined;
@@ -135,6 +145,7 @@ export function replay<Cfg, Entry>(
     next,
     over,
     winners: over ? standings.filter((s) => s.place === 1).map((s) => s.side) : [],
+    endedEarly,
   };
 }
 
@@ -209,6 +220,7 @@ export function checkSave<Cfg, Entry>(
     if (savedIdx === finalIdx && phaseIdx !== finalIdx) {
       return fail(`Round ${save.n + 1} is finished; correct it with all of its phases`);
     }
+    if (view.endedEarly && savedIdx < finalIdx) return fail('This game was ended; resume it to keep playing');
     if (savedIdx < finalIdx && (!isLast || phaseIdx > savedIdx + 1)) {
       return fail(`Round ${save.n + 1} needs "${rules.phases[savedIdx + 1].label}" next`);
     }

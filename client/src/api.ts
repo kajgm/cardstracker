@@ -1,4 +1,4 @@
-import type { Issue } from '@cards/engine';
+import type { Issue, RoundInfo } from '@cards/engine';
 
 // Mirrors server/src/store.ts. Kept as plain types so the client never imports server code.
 export interface Player {
@@ -21,6 +21,7 @@ export interface GameDto {
   createdBy: string | null;
   createdAt: string;
   finishedAt: string | null;
+  endedEarly: boolean;
   players: SeatedPlayer[];
   rounds: { n: number; phase: string; entry: Record<string, unknown>; enteredBy: string | null }[];
 }
@@ -30,7 +31,13 @@ export interface GameSummary {
   status: GameDto['status'];
   createdAt: string;
   finishedAt: string | null;
+  /** UTC, SQLite format: 'YYYY-MM-DD HH:MM:SS'. */
+  updatedAt: string;
   round: number;
+  firstDealer: number;
+  endedEarly: boolean;
+  target: number | null;
+  next: { n: number; info: RoundInfo; dealer: string } | null;
   players: { name: string; color: string; total: number; place: number }[];
 }
 export interface LeaderRow {
@@ -39,7 +46,17 @@ export interface LeaderRow {
   color: string;
   played: number;
   won: number;
-  avg: number;
+  avg: number | null;
+  /** Places in the last five finished games, oldest first. */
+  form: number[];
+}
+export interface RecordLine {
+  label: string;
+  value: string;
+  name: string;
+  color: string;
+  gameId?: string;
+  type?: string;
 }
 export interface StatLine {
   label: string;
@@ -89,5 +106,9 @@ export const api = {
     call<GameDto>('PUT', `/games/${id}/rounds/${n}`, body),
   undo: (id: string, n: number, version: number) => call<GameDto>('DELETE', `/games/${id}/rounds/${n}?version=${version}`),
   rematch: (id: string) => call<GameDto>('POST', `/games/${id}/rematch`),
+  end: (id: string, version: number) => call<GameDto>('POST', `/games/${id}/end`, { version }),
+  resume: (id: string, version: number) => call<GameDto>('DELETE', `/games/${id}/end?version=${version}`),
+  /** One game's table, or 'all'. */
   leaderboard: (type: string) => call<LeaderRow[]>('GET', `/stats/${type}`),
+  records: () => call<RecordLine[]>('GET', '/records'),
 };

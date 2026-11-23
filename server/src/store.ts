@@ -1,5 +1,5 @@
-import { checkSave, gameId, replay, type AnyGameRules, type Issue, type StoredGame } from '@cards/engine';
-import { getGame } from '@cards/games';
+import { checkSave, computeStats, gameId, replay, type AnyGameRules, type Issue, type RoundInfo, type StoredGame } from '@cards/engine';
+import { games, getGame } from '@cards/games';
 import { tx, type Db } from './db';
 
 /** Player colors, handed out in order. Tokens the client maps to theme-aware values. */
@@ -28,6 +28,8 @@ export interface GameDto {
   createdBy: string | null;
   createdAt: string;
   finishedAt: string | null;
+  /** Ended by the players before the target or the last hand. */
+  endedEarly: boolean;
   players: SeatedPlayer[];
   rounds: { n: number; phase: string; entry: Record<string, unknown>; enteredBy: string | null }[];
 }
@@ -53,6 +55,7 @@ interface GameRow {
   created_by: string | null;
   created_at: string;
   finished_at: string | null;
+  ended_early: number;
 }
 
 export function listPlayers(db: Db): Player[] {
@@ -111,13 +114,20 @@ export function getGameDto(db: Db, id: string): GameDto {
     createdBy: row.created_by,
     createdAt: row.created_at,
     finishedAt: row.finished_at,
+    endedEarly: !!row.ended_early,
     players,
     rounds,
   };
 }
 
 export function stored(dto: GameDto): StoredGame {
-  return { config: dto.config, seats: dto.players.length, firstDealer: dto.firstDealer, rounds: dto.rounds };
+  return {
+    config: dto.config,
+    seats: dto.players.length,
+    firstDealer: dto.firstDealer,
+    rounds: dto.rounds,
+    endedEarly: dto.endedEarly,
+  };
 }
 
 export interface NewGame {
@@ -221,6 +231,30 @@ export function undoRound(db: Db, id: string, n: number, version: number): GameD
   });
 }
 
+/** Ends a game before its target or last hand; the standings after the last complete round stand. */
+export function endGame(db: Db, id: string, version: number): GameDto {
+  return tx(db, () => {
+    const dto = getGameDto(db, id);
+    bump(db, dto, version);
+    if (dto.status !== 'active') throw new ApiError(400, 'This game is already over');
+    const view = replay(rulesFor(dto.type), stored(dto));
+    if (!view.rounds.some((r) => r.complete)) throw new ApiError(400, 'Finish a round before ending the game');
+    db.prepare('UPDATE games SET ended_early = 1 WHERE id = ?').run(id);
+    return settle(db, id);
+  });
+}
+
+/** Undoes endGame: the game carries on from where it stopped. */
+export function resumeGame(db: Db, id: string, version: number): GameDto {
+  return tx(db, () => {
+    const dto = getGameDto(db, id);
+    bump(db, dto, version);
+    if (!dto.endedEarly) throw new ApiError(400, 'This game was not ended early');
+    db.prepare('UPDATE games SET ended_early = 0 WHERE id = ?').run(id);
+    return settle(db, id);
+  });
+}
+
 export function rematch(db: Db, id: string, user?: string): GameDto {
   const dto = getGameDto(db, id);
   return createGame(
@@ -241,7 +275,15 @@ export interface GameSummary {
   status: GameDto['status'];
   createdAt: string;
   finishedAt: string | null;
+  /** When a round was last saved, or when the game started. UTC, SQLite format. */
+  updatedAt: string;
   round: number;
+  firstDealer: number;
+  endedEarly: boolean;
+  /** Score that ends the game, for games that have one. */
+  target: number | null;
+  /** What is being played now; null once the game is over. */
+  next: { n: number; info: RoundInfo; dealer: string } | null;
   players: { name: string; color: string; total: number; place: number }[];
 }
 
@@ -258,13 +300,22 @@ export function listGames(db: Db, filter: { type?: string; status?: string; limi
     const rules = getGame(dto.type);
     const view = rules ? replay(rules, stored(dto)) : undefined;
     const place = new Map(view?.standings.map((s) => [s.side, s.place]));
+    const { updated } = db
+      .prepare('SELECT MAX(updated_at) AS updated FROM rounds WHERE game_id = ?')
+      .get(id) as { updated: string | null };
+    const next = view?.next;
     return {
       id,
       type: dto.type,
       status: dto.status,
       createdAt: dto.createdAt,
       finishedAt: dto.finishedAt,
-      round: (view?.next?.n ?? view?.rounds.length ?? 0) + 1,
+      updatedAt: updated ?? dto.createdAt,
+      round: (next?.n ?? view?.rounds.length ?? 0) + 1,
+      firstDealer: dto.firstDealer,
+      endedEarly: dto.endedEarly,
+      target: typeof (dto.config as { target?: unknown }).target === 'number' ? (dto.config as { target: number }).target : null,
+      next: next ? { n: next.n, info: next.info, dealer: dto.players[next.dealer]?.name ?? '' } : null,
       players: dto.players.map((p) => ({
         name: p.name,
         color: p.color,
@@ -286,18 +337,120 @@ export interface LeaderRow {
   color: string;
   played: number;
   won: number;
-  avg: number;
+  /** Average final score; null across all games, where scores don't compare. */
+  avg: number | null;
+  /** Places in the last five finished games, oldest first. */
+  form: number[];
 }
 
-export function leaderboard(db: Db, type: string): LeaderRow[] {
-  rulesFor(type);
+/** Finished results in the order the games finished. */
+function finishedResults(db: Db, type?: string) {
   return db
     .prepare(
-      `SELECT p.id AS playerId, p.name, p.color, COUNT(*) AS played,
-              SUM(r.place = 1) AS won, ROUND(AVG(r.total), 1) AS avg
+      `SELECT r.game_id AS gameId, r.player_id AS playerId, p.name, p.color, g.type, r.total, r.place
        FROM results r JOIN games g ON g.id = r.game_id JOIN players p ON p.id = r.player_id
-       WHERE g.type = ? AND g.status = 'finished'
-       GROUP BY p.id ORDER BY won DESC, avg ${getGame(type)!.lowWins ? 'ASC' : 'DESC'}`,
+       WHERE g.status = 'finished' ${type ? 'AND g.type = ?' : ''}
+       ORDER BY g.finished_at, g.rowid`,
     )
-    .all(type) as unknown as LeaderRow[];
+    .all(...(type ? [type] : [])) as unknown as {
+    gameId: string;
+    playerId: number;
+    name: string;
+    color: string;
+    type: string;
+    total: number;
+    place: number;
+  }[];
+}
+
+/** One game's table, or 'all': wins add up across games; averages only within one game. */
+export function leaderboard(db: Db, type: string): LeaderRow[] {
+  const all = type === 'all';
+  const rules = all ? undefined : rulesFor(type);
+  const by = new Map<number, LeaderRow & { sum: number }>();
+  for (const r of finishedResults(db, rules?.id)) {
+    const row = by.get(r.playerId) ?? { playerId: r.playerId, name: r.name, color: r.color, played: 0, won: 0, avg: null, form: [], sum: 0 };
+    row.played++;
+    row.won += r.place === 1 ? 1 : 0;
+    row.sum += r.total;
+    row.form = [...row.form, r.place].slice(-5);
+    by.set(r.playerId, row);
+  }
+  const rows = [...by.values()].map(({ sum, ...row }) => ({
+    ...row,
+    avg: rules ? Math.round((sum / row.played) * 10) / 10 : null,
+  }));
+  const rate = (r: LeaderRow) => r.won / r.played;
+  return rows.sort(
+    (a, b) =>
+      b.won - a.won ||
+      (rules ? (rules.lowWins ? a.avg! - b.avg! : b.avg! - a.avg!) : rate(b) - rate(a)) ||
+      a.name.localeCompare(b.name),
+  );
+}
+
+export interface RecordLine {
+  label: string;
+  value: string;
+  name: string;
+  color: string;
+  /** The game a single-game record came from. */
+  gameId?: string;
+  type?: string;
+}
+
+/** Rate stats need this many rounds before they count as a record. */
+const MIN_RATE_ROUNDS = 10;
+
+/** All-time bests: longest win streak, each game's best final score, and each game's own stats. */
+export function records(db: Db): RecordLine[] {
+  const out: RecordLine[] = [];
+  const results = finishedResults(db);
+
+  const streak = new Map<number, { run: number; best: number; name: string; color: string }>();
+  for (const r of results) {
+    const s = streak.get(r.playerId) ?? { run: 0, best: 0, name: r.name, color: r.color };
+    s.run = r.place === 1 ? s.run + 1 : 0;
+    s.best = Math.max(s.best, s.run);
+    streak.set(r.playerId, s);
+  }
+  const longest = [...streak.values()].sort((a, b) => b.best - a.best)[0];
+  if (longest && longest.best >= 2) out.push({ label: 'Win streak', value: String(longest.best), name: longest.name, color: longest.color });
+
+  for (const rules of Object.values(games)) {
+    const mine = results.filter((r) => r.type === rules.id);
+    const candidates = rules.lowWins ? mine.filter((r) => r.place === 1) : mine;
+    const best = [...candidates].sort((a, b) => (rules.lowWins ? a.total - b.total : b.total - a.total))[0];
+    if (best) {
+      out.push({ label: `Best ${rules.name} game`, value: String(best.total), name: best.name, color: best.color, gameId: best.gameId, type: rules.id });
+    }
+
+    if (!rules.stats?.length) continue;
+    const ids = [...new Set(mine.map((r) => r.gameId))];
+    const finalPhase = rules.phases[rules.phases.length - 1].id;
+    const tally = rules.stats.map(() => new Map<number, { hits: number; rounds: number; name: string; color: string }>());
+    for (const id of ids) {
+      const dto = getGameDto(db, id);
+      const done = dto.rounds.filter((r) => r.phase === finalPhase).length;
+      computeStats(rules, stored(dto)).forEach((line, i) => {
+        dto.players.forEach((p) => {
+          const t = tally[i].get(p.id) ?? { hits: 0, rounds: 0, name: p.name, color: p.color };
+          t.hits += line.kind === 'rate' ? Math.round(line.values[p.seat] * done) : line.values[p.seat];
+          t.rounds += done;
+          tally[i].set(p.id, t);
+        });
+      });
+    }
+    rules.stats.forEach((stat, i) => {
+      const rows = [...tally[i].values()];
+      if (stat.kind === 'count') {
+        const top = rows.sort((a, b) => b.hits - a.hits)[0];
+        if (top && top.hits > 0) out.push({ label: stat.label, value: String(top.hits), name: top.name, color: top.color, type: rules.id });
+      } else {
+        const top = rows.filter((t) => t.rounds >= MIN_RATE_ROUNDS).sort((a, b) => b.hits / b.rounds - a.hits / a.rounds)[0];
+        if (top) out.push({ label: stat.label, value: `${Math.round((top.hits / top.rounds) * 100)}%`, name: top.name, color: top.color, type: rules.id });
+      }
+    });
+  }
+  return out;
 }

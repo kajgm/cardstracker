@@ -21,7 +21,9 @@
   --hearts: #c4122f; --on-hearts: #ffffff; --hearts-soft: #fbe8eb;
   --tenone: #1d4f9e; --on-tenone: #ffffff; --tenone-soft: #e7eefa;
   --table: #12694d; --on-table: #ffffff; --table-soft: #e1f1e9;
-  --gold: #946609; --gold-soft: #f6ecd5;
+  --gold: #946609; --on-gold: #ffffff; --gold-soft: #f6ecd5; --gold-ink: #e2b55a;
+  --live: #ff6b6b;
+  --felt-panel: rgba(3, 22, 15, .42); --felt-rule: rgba(255, 255, 255, .2);
   --good: #17784a; --good-soft: #e1f2e9;
   --bad: #b3261e; --bad-soft: #fbe9e7;
   --warn: #8a5206; --warn-soft: #fbf0db;
@@ -47,7 +49,7 @@
     --hearts: #ff6b80; --on-hearts: #2b0710; --hearts-soft: #36181e;
     --tenone: #85a9ff; --on-tenone: #0b1a3d; --tenone-soft: #17223a;
     --table: #4cc79a; --on-table: #05271b; --table-soft: #13302a;
-    --gold: #e2b55a; --gold-soft: #302815;
+    --gold: #e2b55a; --on-gold: #2a1d05; --gold-soft: #302815;
     --good: #57c98f; --good-soft: #13291f;
     --bad: #ff8278; --bad-soft: #35191a;
     --warn: #f1ad55; --warn-soft: #33260f;
@@ -99,6 +101,14 @@ a { color: var(--accent); }
 .actionbar > * { max-width: 40rem; }
 .actionbar .btn.pri { flex: 1; }
 .error { background: var(--bad-soft); color: var(--bad); border-radius: 12px; padding: 10px 12px; margin: 0; }
+/* A pulsing dot for games being played right now. */
+.livedot { position: relative; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--live); flex: none; }
+.livedot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--live); animation: ping 1.8s var(--ease) infinite; }
+@keyframes ping { from { transform: scale(1); opacity: .7; } to { transform: scale(2.8); opacity: 0; } }
+/* Segmented filter */
+.chips { display: inline-flex; gap: 3px; padding: 3px; border-radius: 999px; background: var(--surface-2); max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.chips button { border: 0; background: transparent; min-height: 34px; padding: 0 12px; border-radius: 999px; font: 600 13px var(--f-body); color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.chips button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px var(--shadow); }
 /* Loading placeholder */
 .skel { background: linear-gradient(90deg, var(--surface-2) 30%, var(--surface) 50%, var(--surface-2) 70%) 0 0 / 300% 100%; border-radius: 12px; animation: shimmer 1.4s linear infinite; }
 @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }

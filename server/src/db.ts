@@ -49,6 +49,8 @@ const MIGRATIONS: string[] = [
     PRIMARY KEY (game_id, player_id)
   );
   `,
+  // 2: games the players ended before the target or the last hand.
+  `ALTER TABLE games ADD COLUMN ended_early INTEGER NOT NULL DEFAULT 0;`,
 ];
 
 export type Db = DatabaseSync;
