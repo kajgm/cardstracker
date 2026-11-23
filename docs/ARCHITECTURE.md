@@ -123,6 +123,9 @@ and keeps 14. Owner-only `GET /api/export` dumps everything as JSON
 - Put it behind an authenticating reverse proxy that sets
   `Cf-Access-Authenticated-User-Email`. The server trusts that header, so the
   proxy must be the only way in and must overwrite any copy a client sends.
+- Without that header (e.g. a public bypass), the client asks for a name and
+  sends it as `X-Guest-Name`; it is recorded as `guest:<name>` in
+  `created_by`/`entered_by` and never counts as the owner.
 - Settings: `OWNER_EMAIL` (may export and purge). Never set `DEV_USER_EMAIL`
   outside local development.
 

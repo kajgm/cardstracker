@@ -75,12 +75,33 @@ export class ApiError extends Error {
   }
 }
 
+const GUEST_KEY = 'cards.guestName';
+export function getGuestName(): string {
+  try {
+    return localStorage.getItem(GUEST_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+export function setGuestName(name: string) {
+  try {
+    localStorage.setItem(GUEST_KEY, name.trim());
+  } catch {
+    // Private mode: the name just isn't remembered.
+  }
+}
+
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   let res: Response;
+  const headers: Record<string, string> = {};
+  if (body !== undefined) headers['content-type'] = 'application/json';
+  const guest = getGuestName();
+  // Encoded because header values must be ASCII; the server ignores it under an Access login.
+  if (guest) headers['x-guest-name'] = encodeURIComponent(guest);
   try {
     res = await fetch(`/api${path}`, {
       method,
-      headers: body === undefined ? undefined : { 'content-type': 'application/json' },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
@@ -93,7 +114,8 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 }
 
 export const api = {
-  me: () => call<{ email: string | null; player: Player | null; owner: boolean }>('GET', '/me'),
+  me: () =>
+    call<{ email: string | null; guest: string | null; player: Player | null; owner: boolean }>('GET', '/me'),
   players: () => call<Player[]>('GET', '/players'),
   addPlayer: (name: string) => call<Player>('POST', '/players', { name }),
   games: (q: { type?: string; status?: 'active' | 'finished' } = {}) =>

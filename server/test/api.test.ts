@@ -49,6 +49,24 @@ describe('api', () => {
     expect((await call('GET', '/api/me')).body).toMatchObject({ email: 'ana@example.com', owner: false });
   });
 
+  it('records a guest name when there is no Access login, never as owner', async () => {
+    const headers = { 'content-type': 'application/json', 'x-guest-name': encodeURIComponent(' Zoë\n ') };
+    const me = await (await fetch(`${base}/api/me`, { headers })).json();
+    expect(me).toMatchObject({ email: null, guest: 'Zoë', owner: false });
+    const playerIds = await seatFour();
+    const res = await fetch(`${base}/api/games`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ type: 'hearts', playerIds, firstDealer: 0 }),
+    });
+    expect(((await res.json()) as GameDto).createdBy).toBe('guest:Zoë');
+    const owner = { ...headers, 'x-guest-name': 'owner@example.com' };
+    expect((await fetch(`${base}/api/export`, { headers: owner })).status).toBe(403);
+    // An Access login wins over a guest header.
+    const both = { ...headers, 'cf-access-authenticated-user-email': 'ana@example.com' };
+    expect(await (await fetch(`${base}/api/me`, { headers: both })).json()).toMatchObject({ email: 'ana@example.com', guest: null });
+  });
+
   it('keeps one roster entry per name', async () => {
     await seatFour();
     expect((await call('POST', '/api/players', { name: 'mom' })).status).toBe(409);
