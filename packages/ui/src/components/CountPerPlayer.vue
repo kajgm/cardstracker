@@ -62,6 +62,6 @@ function set(seat: number, value: number) {
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .line { display: grid; grid-template-columns: minmax(0, 1fr) auto 40px; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .who { display: flex; align-items: center; gap: 8px; font-weight: 500; white-space: nowrap; }
-.auto { padding: 1px 5px; border: 1px dashed var(--line-2); border-radius: 5px; font: 600 10px var(--f-body); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.auto { padding: 1px 5px; border: 1px dashed var(--line-2); border-radius: 5px; font: 600 12px var(--f-body); color: var(--ink-3); }
 .pv { text-align: right; font: 700 20px/1 var(--f-num); }
 </style>

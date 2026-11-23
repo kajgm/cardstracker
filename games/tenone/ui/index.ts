@@ -48,7 +48,7 @@ const ui: GameUi = {
     },
   ],
   roundLabel: (info, dealer) =>
-    `${info.cards} ${info.cards === 1 ? 'card' : 'cards'}${info.forehead ? ' on foreheads' : ''} · ${dealer} deals`,
+    `${info.cards} ${info.cards === 1 ? 'card' : 'cards'}${info.forehead ? ' on foreheads' : ''}, ${dealer} deals`,
 };
 
 export default ui;

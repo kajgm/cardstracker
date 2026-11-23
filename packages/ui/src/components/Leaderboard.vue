@@ -33,7 +33,7 @@ const ranked = computed(() => {
       <span>Player</span>
       <span>Wins</span>
       <span v-if="showAvg">Avg</span>
-      <span class="fh">Last 5</span>
+      <span class="fh">Last five</span>
     </div>
     <TransitionGroup tag="ol" name="lb">
       <li v-for="r in ranked" :key="r.key" class="row" :class="{ avg: showAvg }">
@@ -53,7 +53,7 @@ const ranked = computed(() => {
 .lb ol { list-style: none; margin: 0; padding: 0; }
 .head, .row { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto 104px; gap: 10px; align-items: center; padding: 0 12px; }
 .head.avg, .row.avg { grid-template-columns: 16px minmax(0, 1fr) auto 40px 104px; }
-.head { padding-top: 9px; padding-bottom: 5px; font: 600 10.5px var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.head { padding-top: 8px; padding-bottom: 4px; font: 600 12px/1.3 var(--f-body); color: var(--ink-3); }
 .head .fh { text-align: right; }
 .row { padding-top: 9px; padding-bottom: 9px; border-top: 1px solid var(--line); font-size: 14.5px; }
 .rk { font-size: 14px; color: var(--ink-3); text-align: center; }

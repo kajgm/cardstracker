@@ -32,7 +32,7 @@ function set(seat: number, value: number) {
   <div class="bids">
     <div class="head">
       <p class="lbl">Bids</p>
-      <span class="sum-note">{{ total }} bid · {{ max }} {{ max === 1 ? 'card' : 'cards' }}</span>
+      <span class="sum-note">{{ total }} bid of {{ max }} {{ max === 1 ? 'card' : 'cards' }}</span>
     </div>
     <div v-for="(seat, i) in order" :key="seat" class="bid">
       <span class="who">

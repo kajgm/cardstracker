@@ -74,7 +74,7 @@ tbody tr:active td { background: var(--surface-2); }
 .rc { position: sticky; left: 0; z-index: 1; background: var(--surface); }
 .rc { width: 44px; padding-left: 10px; text-align: left; font: 500 12px/1.1 var(--f-body); color: var(--ink-3); }
 tfoot td { border-bottom: 0; border-top: 2px solid var(--ink-2); font: 700 24px/1 var(--f-num); padding: 10px 2px; }
-tfoot .rc { font: 600 11px var(--f-body); text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); }
+tfoot .rc { font: 600 13px var(--f-body); color: var(--ink-2); }
 td.best { color: var(--gold); transition: color .4s; }
 tr.live td { background: var(--accent-soft); font: 500 13px/1.2 var(--f-body); color: var(--ink-2); }
 .legend { margin: -6px 2px 0; font-size: 12.5px; color: var(--ink-3); }

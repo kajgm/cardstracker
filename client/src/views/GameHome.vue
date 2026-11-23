@@ -76,7 +76,7 @@ watch(
 
 <style scoped>
 .start { font: 700 18px var(--f-display); min-height: 56px; }
-.about { margin-top: 12px; border-top: 1px solid rgba(255, 255, 255, .16); padding-top: 10px; }
+.about { margin-top: 12px; border-top: 1px solid var(--felt-rule); padding-top: 10px; }
 .about summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--felt-ink); min-height: 32px; display: flex; align-items: center; gap: 6px; list-style: none; }
 .about summary::-webkit-details-marker { display: none; }
 .about summary::after { content: "›"; font-size: 20px; line-height: 1; transition: transform .2s var(--ease); color: var(--felt-ink-2); }

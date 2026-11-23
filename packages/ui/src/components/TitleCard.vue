@@ -31,8 +31,8 @@ withDefaults(
   display: block; position: relative; overflow: hidden; border-radius: 18px; text-decoration: none;
   background-color: var(--felt); color: var(--felt-ink);
   background-image:
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, .04) 0 1px, transparent 1px 12px),
-    repeating-linear-gradient(-45deg, rgba(255, 255, 255, .04) 0 1px, transparent 1px 12px);
+    repeating-linear-gradient(45deg, var(--felt-lattice) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(-45deg, var(--felt-lattice) 0 1px, transparent 1px 12px);
   -webkit-user-select: none; user-select: none;
   transition: transform .2s var(--ease);
 }
@@ -48,7 +48,7 @@ withDefaults(
   transition: transform .45s var(--spring);
 }
 .lift {
-  width: 100%; height: 100%; border-radius: 7px; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .35));
+  width: 100%; height: 100%; border-radius: 7px; filter: drop-shadow(0 6px 8px var(--felt-shade));
   animation: deal .55s var(--spring) both; animation-delay: calc(var(--i) * 70ms + 60ms);
 }
 @keyframes deal { from { transform: translate(110px, 90px) rotate(40deg); opacity: 0; } }
@@ -68,5 +68,5 @@ withDefaults(
 .header .body b { font-size: 34px; }
 .body p { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--felt-ink); }
 .facts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-.facts span { font: 600 11px var(--f-body); padding: 3px 8px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .22); color: var(--felt-ink-2); }
+.facts span { font: 600 11px var(--f-body); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--felt-rule); color: var(--felt-ink-2); }
 </style>

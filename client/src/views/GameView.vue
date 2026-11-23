@@ -177,7 +177,7 @@ const statText = (s: StatLine) =>
     .filter(({ v }) => s.kind === 'rate' || v > 0)
     .sort((a, b) => b.v - a.v)
     .map(({ p, v }) => `${p.name} ${s.kind === 'rate' ? `${Math.round(v * 100)}%` : v}`)
-    .join(' · ') || 'Nobody';
+    .join(', ') || 'Nobody';
 </script>
 
 <template>
@@ -245,9 +245,9 @@ const statText = (s: StatLine) =>
       {{ armedUndo ? `Undo round ${lastRound.n + 1}?` : 'Undo' }}
     </button>
     <button v-if="view.next" type="button" class="btn pri" @click="enterNext">
-      {{ phaseLabel(view.next.phase) }} · round {{ view.next.n + 1 }}
+      {{ phaseLabel(view.next.phase) }}, round {{ view.next.n + 1 }}
     </button>
-    <button v-else type="button" class="btn pri" @click="rematch">Rematch · {{ nameOf((game.firstDealer + 1) % players.length) }} deals</button>
+    <button v-else type="button" class="btn pri" @click="rematch">Rematch, {{ nameOf((game.firstDealer + 1) % players.length) }} deals</button>
   </div>
 
   <Transition name="flourish">
@@ -260,7 +260,7 @@ const statText = (s: StatLine) =>
   <Sheet
     v-if="draft && draftRound && ui && game"
     ref="sheet"
-    :title="draft.correcting ? `Correct round ${draft.n + 1}` : `${phaseLabel(draft.phase)} · round ${draft.n + 1}`"
+    :title="draft.correcting ? `Correct round ${draft.n + 1}` : `${phaseLabel(draft.phase)}, round ${draft.n + 1}`"
     :subtitle="ui.roundLabel(draftRound.info, nameOf(draftRound.ctx.dealer))"
     :issues="issues"
     :save-label="draft.correcting ? 'Save correction' : `Save ${phaseLabel(draft.phase).toLowerCase()}`"
@@ -300,9 +300,9 @@ const statText = (s: StatLine) =>
 .drop-enter-from, .drop-leave-to { opacity: 0; transform: translateY(-6px); }
 
 /* The moon (or any flourish) sweeps across, then fades. */
-.flourish { position: fixed; inset: 0; z-index: 30; display: grid; place-content: center; justify-items: center; gap: 10px; pointer-events: auto; background: radial-gradient(circle at 50% 45%, rgba(8, 20, 16, .55), rgba(8, 20, 16, .2) 60%, transparent); }
-.flourish .fg { font-size: 96px; line-height: 1; color: var(--gold); text-shadow: 0 0 40px rgba(226, 181, 90, .7); animation: sweep 1.6s var(--ease) both; }
-.flourish b { font: 800 26px var(--f-display); color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, .5); animation: rise .5s .35s var(--ease) both; }
+.flourish { position: fixed; inset: 0; z-index: 30; display: grid; place-content: center; justify-items: center; gap: 10px; pointer-events: auto; background: radial-gradient(circle at 50% 45%, var(--flourish-scrim), var(--flourish-scrim-2) 60%, transparent); }
+.flourish .fg { font-size: 96px; line-height: 1; color: var(--gold); text-shadow: 0 0 40px var(--flourish-glow); animation: sweep 1.6s var(--ease) both; }
+.flourish b { font: 800 26px var(--f-display); color: var(--flourish-ink); text-shadow: 0 2px 12px var(--flourish-shadow); animation: rise .5s .35s var(--ease) both; }
 @keyframes sweep { from { transform: translate(-60vw, 30px) rotate(-40deg) scale(.6); opacity: 0; } 55% { transform: translate(4vw, -6px) rotate(6deg) scale(1.1); opacity: 1; } }
 .flourish-enter-active { transition: opacity .2s; }
 .flourish-leave-active { transition: opacity .5s; }
