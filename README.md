@@ -24,7 +24,8 @@ npm start          # serve the build on :3000
 ## Add a game
 
 1. `games/<id>/rules.ts` with `defineGame()` and `rules.test.ts` with real hands.
-2. `games/<id>/ui/`: one editor per phase, usually kit components from `@cards/ui`.
+2. `games/<id>/ui/`: one editor per phase, usually kit components from `@cards/ui`,
+   and the title card (`hand`, `blurb`, `facts`, `about`).
 3. One line in `games/index.ts`, one in `games/ui.ts`.
 
 The route `/<id>`, the API, storage, stats and live updates need no changes.

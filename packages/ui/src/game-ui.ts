@@ -26,6 +26,24 @@ export type ConfigField =
   | { key: string; label: string; hint?: string; kind: 'choice'; options: { value: string; label: string }[] }
   | { key: string; label: string; hint?: string; kind: 'number'; min: number; max: number; step?: number };
 
+/** A card drawn on a title card. */
+export interface CardFace {
+  rank: 'A' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'Q' | 'K';
+  suit: 'hearts' | 'spades' | 'diamonds' | 'clubs';
+}
+
+/** The hand on a game's title card: up to four cards, fanned or shrinking left to right. */
+export interface GameHand {
+  layout: 'fan' | 'stair';
+  cards: CardFace[];
+}
+
+/** A moment worth marking when a round lands, e.g. a moon in Hearts. */
+export interface Flourish {
+  glyph: string;
+  text: string;
+}
+
 /** The client half of a game. The rules half lives in games/<id>/rules.ts. */
 export interface GameUi {
   /** Shown on the mini card: '♥', '10'. */
@@ -36,6 +54,16 @@ export interface GameUi {
   accent: string;
   /** Tile text on the home screen. */
   blurb: string;
+  /** Title card hand. */
+  hand: GameHand;
+  /** Chips on the title card, after the player count: 'to 100', 'Lowest wins'. */
+  facts: string[];
+  /** "How it plays", a short paragraph on the game's page. */
+  about: string;
+  /** Key to the marks in the score grid cells, shown under it. */
+  legend?: string;
+  /** Called when a round completes; a result is shown as a brief overlay. */
+  flourish?(entry: Record<string, unknown>, players: TablePlayer[]): Flourish | undefined;
   /** One sheet body per phase id. */
   editors: Record<string, Component>;
   /** Starting entry for a phase: blank, or carried over from the earlier phase. */

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { getGame } from '@cards/games';
 import { gameUis } from '@cards/games/ui';
-import { AppBar } from '@cards/ui';
+import { AppBar, TitleCard } from '@cards/ui';
 import { api, type GameSummary, type LeaderRow } from '../api';
 import GameList from './GameList.vue';
 
@@ -38,6 +38,18 @@ watch(
 <template>
   <AppBar :title="rules.name" back="/" :glyph="ui?.glyph" :glyph-class="ui?.ink" />
   <main class="page">
+    <TitleCard
+      v-if="ui"
+      :name="rules.name"
+      :hand="ui.hand"
+      :facts="[`${rules.players.min}–${rules.players.max} players`, ...ui.facts]"
+      size="header"
+    >
+      <details class="about">
+        <summary>How it plays</summary>
+        <p>{{ ui.about }}</p>
+      </details>
+    </TitleCard>
     <p v-if="error" class="error">{{ error }}</p>
     <RouterLink :to="`/${type}/new`" class="btn pri start">New game</RouterLink>
 
@@ -73,6 +85,12 @@ watch(
 
 <style scoped>
 .start { font: 700 18px var(--f-display); min-height: 56px; }
+.about { margin-top: 12px; border-top: 1px solid rgba(255, 255, 255, .16); padding-top: 10px; }
+.about summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--felt-ink); min-height: 32px; display: flex; align-items: center; gap: 6px; list-style: none; }
+.about summary::-webkit-details-marker { display: none; }
+.about summary::after { content: "›"; font-size: 20px; line-height: 1; transition: transform .2s var(--ease); color: var(--felt-ink-2); }
+.about[open] summary::after { transform: rotate(90deg); }
+.about p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; color: var(--felt-ink); animation: rise .3s var(--ease) both; }
 .lb { width: 100%; border-collapse: collapse; }
 .lb th { font: 600 11px var(--f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); text-align: right; padding: 10px 12px 6px; }
 .lb td { text-align: right; padding: 8px 12px; border-top: 1px solid var(--line); font-size: 18px; font-weight: 600; }
