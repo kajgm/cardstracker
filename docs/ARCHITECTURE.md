@@ -8,14 +8,13 @@ diagrams and phone mockups: https://claude.ai/artifact/X2dkNWFerfcc8VScq5y36C
 ## Shape
 
 - One container: Node serves the built Vue SPA, the REST API under `/api` and
-  Socket.IO under `/socket.io`. One SQLite file (`node:sqlite`, WAL) on a PVC.
+  Socket.IO under `/socket.io`. One SQLite file (`node:sqlite`, WAL) on a volume.
 - `/<game>` is a client route looked up in the game registry. Adding a game
-  never touches DNS, Access, cloudflared, NetworkPolicies or ArgoCD.
-- Sign-in is Cloudflare Access (group `friends` + owner) in front of a
-  tunnel-only route. The server reads `Cf-Access-Authenticated-User-Email`
-  for "entered by"; it grants nothing. Players are roster entries, not logins.
-  No guest/bypass access (decided Nov 2026). No LAN route: no internet means no
-  app, which is accepted.
+  never touches the deployment (DNS, proxy, network rules).
+- Sign-in happens in an authenticating reverse proxy in front of the app. The
+  server reads the user's email from `Cf-Access-Authenticated-User-Email`
+  (Cloudflare Access's header name; any proxy can set it) for "entered by"; it
+  grants nothing. Players are roster entries, not logins.
 
 ## Repository
 
@@ -112,20 +111,20 @@ Backups: once a day the server writes `VACUUM INTO /data/backups/cards-YYYY-MM-D
 and keeps 14. Owner-only `GET /api/export` dumps everything as JSON
 (`OWNER_EMAIL`).
 
-## Deployment (kajgm homelab, not done yet)
+## Deployment
 
-Like stocktracker, minus moving parts:
-
-- Release: Actions → Release on `main` (bump patch/minor/major from the latest tag, or an exact version) → `image.yml` → `ghcr.io/kajgm/cardstracker:X.Y.Z` and `:X.Y`. Same workflow as weathertracker and stocktracker.
-- `k8s/apps/cardstracker/` in kajgm/homelab: namespace, Deployment (1 replica,
-  Recreate, uid 1000, :3000, readOnlyRootFilesystem + `/tmp` emptyDir, `/data`
-  PVC `local-path-retain`), Service `cardstracker:80 → 3000`, default-deny
-  NetworkPolicy (in: cloudflared → 3000; out: none). No HTTPRoute, no
-  ExternalSecret.
-- Allowlists: `apps` AppProject destinations and `k8s/apps/kustomization.yaml`
-  only. cloudflared: ingress rule with `access.required` + egress to port 3000.
-- Access app `cards.kajgm.com`, session 1 month, group `friends` + owner, then
-  `cloudflared tunnel route dns homelab cards.kajgm.com`.
+- Release: Actions → Release on `main` (bump patch/minor/major from the latest
+  tag, or an exact version) → `image.yml` → `ghcr.io/kajgm/cardstracker:X.Y.Z`
+  and `:X.Y`.
+- Run exactly one instance (SQLite has one writer, and live updates assume one
+  Socket.IO server). It listens on :3000 as uid 1000, works with a read-only
+  root filesystem plus a writable `/tmp`, and keeps its data on a volume at
+  `/data`. It needs no outbound network.
+- Put it behind an authenticating reverse proxy that sets
+  `Cf-Access-Authenticated-User-Email`. The server trusts that header, so the
+  proxy must be the only way in and must overwrite any copy a client sends.
+- Settings: `OWNER_EMAIL` (may export and purge). Never set `DEV_USER_EMAIL`
+  outside local development.
 
 ## Where this differs from the proposal
 
