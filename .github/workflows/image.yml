@@ -57,7 +57,7 @@ jobs:
           v="${{ inputs.version || github.ref_name }}"
           echo "app=${v#v}" >> "$GITHUB_OUTPUT"
 
-      # Start the amd64 image the way the cluster runs it and check it before publishing.
+      # Start the amd64 image the way production runs it and check it before publishing.
       - name: Build amd64 image for smoke test
         uses: docker/build-push-action@v6
         with:
