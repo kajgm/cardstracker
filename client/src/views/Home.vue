@@ -10,6 +10,7 @@ import Wordmark from '../components/Wordmark.vue';
 import LiveTable from '../components/LiveTable.vue';
 import GameNight from '../components/GameNight.vue';
 import RecordTiles from '../components/RecordTiles.vue';
+import Region from '../components/Region.vue';
 import { byFinish, fromSql, isLive, lastNight, listNames } from '../time';
 
 const router = useRouter();
@@ -18,14 +19,18 @@ const finished = ref<GameSummary[]>([]);
 const records = ref<RecordLine[]>([]);
 const board = ref<LeaderRow[]>([]);
 const boardType = ref('all');
-/** Any finished game at all: the leaderboard section shows from then on. */
-const anyResults = ref(false);
 const loading = ref(true);
-const error = ref<string>();
+const failed = ref(false);
+const boardFailed = ref(false);
+const actionError = ref<string>();
 
 async function loadBoard() {
-  board.value = await api.leaderboard(boardType.value);
-  if (boardType.value === 'all') anyResults.value = board.value.length > 0;
+  try {
+    board.value = await api.leaderboard(boardType.value);
+    boardFailed.value = false;
+  } catch {
+    boardFailed.value = true;
+  }
 }
 async function load() {
   try {
@@ -34,17 +39,16 @@ async function load() {
       api.games({ status: 'finished' }),
       api.records(),
     ]);
-    await loadBoard();
-    error.value = undefined;
-  } catch (err) {
-    error.value = (err as Error).message;
-  } finally {
-    loading.value = false;
+    failed.value = false;
+  } catch {
+    failed.value = true;
   }
+  await loadBoard();
+  loading.value = false;
 }
 function pickBoard(type: string) {
   boardType.value = type;
-  void loadBoard().catch((err) => (error.value = (err as Error).message));
+  void loadBoard();
 }
 // Live tables move on while the page is open; a minute is fresh enough for a home page.
 let timer: ReturnType<typeof setInterval> | undefined;
@@ -53,6 +57,10 @@ onMounted(() => {
   timer = setInterval(() => document.visibilityState === 'visible' && void load(), 60_000);
 });
 onBeforeUnmount(() => clearInterval(timer));
+
+/** Loading, error, empty or full, for one region. */
+const stateOf = (has: boolean, broken = failed.value) =>
+  loading.value ? 'loading' : broken ? 'error' : has ? 'full' : 'empty';
 
 // ---- felt header ----
 const now = new Date();
@@ -64,11 +72,12 @@ const thisWeek = computed(
   () => finished.value.filter((g) => g.finishedAt && Date.now() - fromSql(g.finishedAt).getTime() < 7 * 86_400_000).length,
 );
 const sub = computed(() => {
-  if (loading.value) return '';
-  const parts: string[] = [];
-  if (live.value.length) parts.push(`${live.value.length} ${live.value.length === 1 ? 'table' : 'tables'} live`);
-  if (thisWeek.value) parts.push(`${thisWeek.value} ${thisWeek.value === 1 ? 'game' : 'games'} this week`);
-  return parts.join(' · ') || 'Pick a game to start.';
+  const n = live.value.length;
+  const w = thisWeek.value;
+  if (loading.value || failed.value) return `${today}.`;
+  if (n) return `${today}. ${n === 1 ? 'One table is' : `${n} tables are`} playing now.`;
+  if (w) return `${today}. ${w} ${w === 1 ? 'game' : 'games'} finished this week.`;
+  return `${today}. Pick a game to start.`;
 });
 
 // ---- same table again ----
@@ -78,17 +87,18 @@ const againText = computed(() => {
   const g = last.value;
   if (!g) return '';
   const dealer = g.players[(g.firstDealer + 1) % g.players.length]?.name;
-  return `${getGame(g.type)?.name ?? g.type} with ${listNames(g.players.map((p) => p.name))} · ${dealer} deals`;
+  return `${getGame(g.type)?.name ?? g.type} with ${listNames(g.players.map((p) => p.name))}. ${dealer} deals.`;
 });
 const starting = ref(false);
 async function again() {
   if (!last.value || starting.value) return;
   starting.value = true;
+  actionError.value = undefined;
   try {
     const g = await api.rematch(last.value.id);
     await router.push(`/${g.type}/${g.id}`);
   } catch (err) {
-    error.value = (err as Error).message;
+    actionError.value = (err as Error).message;
   } finally {
     starting.value = false;
   }
@@ -115,9 +125,8 @@ const night = computed(() => lastNight(finished.value));
       </div>
       <div class="top">
         <div class="hello">
-          <p class="date">{{ today }}</p>
           <h1 class="greet">{{ greeting }}</h1>
-          <p class="sub">{{ sub }}&nbsp;</p>
+          <p class="sub">{{ sub }}</p>
         </div>
         <div v-if="tables.length" class="live">
           <LiveTable v-for="g in tables" :key="g.id" :game="g" />
@@ -127,16 +136,15 @@ const night = computed(() => lastNight(finished.value));
   </Felt>
 
   <main class="home">
-    <p v-if="error" class="error wide">{{ error }}</p>
     <div class="col">
       <section class="sec new">
         <h2 class="lbl">New game</h2>
+        <p v-if="actionError" class="error">{{ actionError }}</p>
         <button v-if="last" type="button" class="again" :disabled="starting" @click="again">
           <span class="again-ic" aria-hidden="true">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10a5.5 5.5 0 1 0 1.7-4" /><path d="M4.5 3.2v3.3h3.3" /></svg>
           </span>
           <span class="again-t"><b>{{ starting ? 'Starting…' : 'Same table again' }}</b><small>{{ againText }}</small></span>
-          <span class="again-go" aria-hidden="true">›</span>
         </button>
         <div class="tiles">
           <template v-for="(rules, id) in games" :key="id">
@@ -152,93 +160,82 @@ const night = computed(() => lastNight(finished.value));
           </template>
         </div>
       </section>
-      <section v-if="recent.length" class="sec recent">
-        <h2 class="lbl">Recent</h2>
-        <GameList :games="recent.slice(0, 5)" class="enter" />
-      </section>
+      <Region title="Recent games" class="recent" :state="stateOf(recent.length > 0)" :skeleton="120" @retry="load">
+        <GameList :games="recent.slice(0, 5)" />
+        <template #empty>Finished games show up here, newest first.</template>
+      </Region>
     </div>
 
     <div class="col">
-      <section v-if="loading" class="sec board">
-        <h2 class="lbl">Leaderboard</h2>
-        <div class="skel" style="height: 220px" />
-      </section>
-      <section v-else-if="anyResults" class="sec board">
-        <div class="lblrow">
-          <h2 class="lbl">Leaderboard</h2>
+      <Region title="Leaderboard" class="board" :state="stateOf(rows.length > 0, boardFailed)" :skeleton="220" @retry="loadBoard">
+        <template #tools>
           <div class="chips" role="tablist" aria-label="Which games">
-            <button
-              v-for="t in boardTabs"
-              :key="t.id"
-              type="button"
-              role="tab"
-              :aria-selected="boardType === t.id"
-              @click="pickBoard(t.id)"
-            >
+            <button v-for="t in boardTabs" :key="t.id" type="button" role="tab" :aria-selected="boardType === t.id" @click="pickBoard(t.id)">
               {{ t.name }}
             </button>
           </div>
-        </div>
-        <Leaderboard v-if="rows.length" :rows="rows" :show-avg="boardType !== 'all'" />
-        <p v-else class="mut">No finished {{ getGame(boardType)?.name }} games yet.</p>
-      </section>
-      <section v-if="night.length >= 2" class="sec night">
-        <h2 class="lbl">Last game night</h2>
+        </template>
+        <Leaderboard :rows="rows" :show-avg="boardType !== 'all'" />
+        <template #empty>
+          {{ boardType === 'all' ? 'Finish a game and the standings start here: wins, games played and each player’s last five finishes.' : `No finished ${getGame(boardType)?.name} games yet.` }}
+        </template>
+      </Region>
+      <Region title="Last game night" class="night" :state="stateOf(night.length >= 2)" :skeleton="150" @retry="load">
         <GameNight :games="night" />
-      </section>
-      <section v-if="records.length" class="sec recs">
-        <h2 class="lbl">Records</h2>
+        <template #empty>Play two or more games in one evening and the winner of the night shows here.</template>
+      </Region>
+      <Region title="Records" class="recs" :state="stateOf(records.length > 0)" :skeleton="150" @retry="load">
         <RecordTiles :records="records" />
-      </section>
+        <template #empty>Win streaks, best scores, moons and bid accuracy show here once games are finished.</template>
+      </Region>
     </div>
   </main>
 </template>
 
 <style scoped>
-/* Felt header: wordmark, greeting and the games being played right now. */
+/* Felt header: the wordmark, a greeting and the games being played right now, over floating cards. */
 .hero { padding-top: env(safe-area-inset-top); }
-.in { max-width: 72rem; margin: 0 auto; padding: 8px max(16px, env(safe-area-inset-right)) 18px max(16px, env(safe-area-inset-left)); }
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 58px; }
-.livepill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px 6px 10px; border-radius: 999px; background: var(--felt-panel); border: 1px solid var(--felt-rule); font: 600 13px/1 var(--f-body); color: var(--felt-ink); text-decoration: none; white-space: nowrap; }
-.hello { margin: 14px 0 16px; }
-.date { margin: 0; font: 600 11px var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--felt-ink-2); }
-.greet { margin: 4px 0 3px; font: 800 32px/1.02 var(--f-display); letter-spacing: -.03em; }
-.sub { margin: 0; font-size: 14px; color: var(--felt-ink-2); }
-.live { display: grid; grid-auto-flow: column; grid-auto-columns: 86%; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; scrollbar-width: none; }
+.in { max-width: 72rem; margin: 0 auto; padding: 8px max(16px, env(safe-area-inset-right)) 20px max(16px, env(safe-area-inset-left)); }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; }
+.livepill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: var(--felt-panel); border: 1px solid var(--felt-rule); font: 600 13px/1 var(--f-body); color: var(--felt-ink); text-decoration: none; white-space: nowrap; }
+/* On phones the text keeps to the left two-thirds; the floating cards have the rest. */
+.hello { margin: 24px 0 20px; max-width: min(17rem, 66%); }
+.greet { margin: 0 0 4px; font: 800 36px/1 var(--f-display); letter-spacing: -.03em; text-wrap: balance; overflow-wrap: break-word; min-width: 0; }
+.sub { margin: 0; font-size: 15px; line-height: 1.4; color: var(--felt-ink-2); }
+.live { display: grid; grid-auto-flow: column; grid-auto-columns: 86%; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; scrollbar-width: none; }
 .live::-webkit-scrollbar, .tiles::-webkit-scrollbar { display: none; }
 .live:has(> :only-child) { grid-auto-columns: 100%; }
 
 /* Body: one column on phones, two on wide screens. */
-.home { max-width: 72rem; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; padding: 20px max(16px, env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+.home { max-width: 72rem; margin: 0 auto; display: flex; flex-direction: column; gap: 32px; padding: 24px max(16px, env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
 .col { display: contents; }
-.sec { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.sec { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .new { order: 1; } .board { order: 2; } .night { order: 3; } .recs { order: 4; } .recent { order: 5; }
-.lblrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .tiles { display: grid; grid-auto-flow: column; grid-auto-columns: 80%; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; scrollbar-width: none; }
 .tile { display: block; text-decoration: none; border-radius: 18px; scroll-snap-align: start; }
 
-.again { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); text-align: left; cursor: pointer; transition: transform .12s var(--ease); }
+.again { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 12px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); text-align: left; cursor: pointer; transition: transform .12s var(--ease), border-color .15s; }
+@media (hover: hover) { .again:hover:not(:disabled) { border-color: var(--line-2); } }
 .again:active:not(:disabled) { transform: scale(.98); }
-.again-ic { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--table-soft); color: var(--table); flex: none; }
+.again:disabled { cursor: progress; color: var(--ink-3); }
+.again-ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--table-soft); color: var(--table); flex: none; }
 .again-ic svg { width: 18px; height: 18px; }
-.again-t { display: flex; flex-direction: column; min-width: 0; }
+.again-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .again-t b { font-size: 15px; }
-.again-t small { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.again-go { margin-left: auto; font-size: 24px; line-height: 1; color: var(--ink-3); }
+.again-t small { font-size: 13px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .fade-enter-active, .fade-leave-active { transition: opacity .3s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
 @media (min-width: 900px) {
-  .in { padding-bottom: 28px; }
-  .top { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 32px; align-items: end; margin-top: 14px; }
-  .hello { margin: 0 0 4px; }
-  .greet { font-size: 48px; }
+  .in { padding-bottom: 32px; }
+  .top { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 32px; align-items: end; margin-top: 16px; }
+  .hello { margin: 0 0 4px; max-width: none; }
+  .greet { font-size: 52px; }
   .live { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; margin: 0; padding: 0; }
   .live:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
-  .home { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 32px; align-items: start; padding-top: 28px; }
-  .home .wide { grid-column: 1 / -1; }
-  .col { display: flex; flex-direction: column; gap: 28px; }
-  .tiles { grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); overflow: visible; margin: 0; padding: 0; }
+  .home { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 32px; align-items: start; padding-top: 32px; }
+  .col { display: flex; flex-direction: column; gap: 32px; }
+  .tiles { grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(min(100%, 232px), 1fr)); overflow: visible; margin: 0; padding: 0; }
 }
 </style>
