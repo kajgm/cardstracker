@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { phaseIssues, roundContext, type RoundView } from '@cards/engine';
-import { AppBar, ScoreGrid, Sheet, StandingsStrip, type TablePlayer } from '@cards/ui';
+import { AppBar, ScoreGrid, Sheet, StandingsStrip, type Flourish, type TablePlayer } from '@cards/ui';
 import { api, type StatLine } from '../api';
 import { useGame } from '../useGame';
+import { connected } from '../socket';
+import { buzz, useWakeLock } from '../device';
 
 const route = useRoute();
 const router = useRouter();
@@ -51,7 +53,7 @@ interface Draft {
   correcting: boolean;
 }
 const draft = ref<Draft>();
-const saving = ref(false);
+const sheet = ref<InstanceType<typeof Sheet>>();
 
 function open(n: number, phase: string, correcting: boolean) {
   if (!rules.value || !ui.value || !game.value) return;
@@ -88,12 +90,15 @@ const issues = computed(() =>
 );
 const phaseLabel = (pid: string) => rules.value?.phases.find((p) => p.id === pid)?.label ?? pid;
 
+// Saves are optimistic: the sheet closes and the round lands at once. If the
+// server refuses, the round rolls back and the sheet reopens with what was typed.
 async function submit() {
   if (!draft.value) return;
-  saving.value = true;
-  const ok = await save(draft.value.n, draft.value.phase, draft.value.entry);
-  saving.value = false;
-  if (ok) draft.value = undefined;
+  const sent = draft.value;
+  sheet.value?.close();
+  const ok = await save(sent.n, sent.phase, sent.entry);
+  if (ok) buzz(12);
+  else setTimeout(() => (draft.value = sent), 300);
 }
 
 // ---- undo, two taps ----
@@ -107,8 +112,32 @@ async function undoLast() {
     return;
   }
   armedUndo.value = false;
-  await undo(lastRound.value.n);
+  if (await undo(lastRound.value.n)) buzz(8);
 }
+
+// ---- flourish: a moon, say, gets a moment on every phone at the table ----
+const flourish = ref<Flourish>();
+let seen = -1;
+let flourishTimer: ReturnType<typeof setTimeout> | undefined;
+// -1 until the game has loaded, so opening a game never replays an old moon.
+watch(() => (view.value ? played.value : -1), (now) => {
+  if (now < 0) return;
+  const fresh = seen >= 0 && now > seen;
+  seen = now;
+  if (!fresh || !ui.value?.flourish || !view.value) return;
+  const last = [...view.value.rounds].reverse().find((r) => r.complete);
+  const f = last && ui.value.flourish(last.entry as Record<string, unknown>, players.value);
+  if (!f) return;
+  flourish.value = f;
+  buzz([20, 60, 20]);
+  clearTimeout(flourishTimer);
+  flourishTimer = setTimeout(() => (flourish.value = undefined), 2400);
+});
+
+// ---- the screen stays on while a game is open ----
+const wake = useWakeLock();
+onMounted(wake.on);
+onBeforeUnmount(wake.off);
 
 // ---- end of game ----
 const stats = ref<StatLine[]>([]);
@@ -142,7 +171,17 @@ const statText = (s: StatLine) =>
   />
   <main class="page">
     <p v-if="error" class="error">{{ error }}</p>
-    <p v-if="notice" class="error" role="alert">{{ notice }}</p>
+    <Transition name="drop">
+      <p v-if="notice" class="error" role="alert">{{ notice }}</p>
+    </Transition>
+    <Transition name="drop">
+      <p v-if="!connected" class="offline" role="status"><span class="spin" aria-hidden="true" />Reconnecting…</p>
+    </Transition>
+
+    <template v-if="!game && !error">
+      <div class="skel" style="height: 62px" />
+      <div class="skel" style="height: 260px" />
+    </template>
 
     <template v-if="game && view">
       <section v-if="view.over" class="panel final">
@@ -160,6 +199,7 @@ const statText = (s: StatLine) =>
         :dealer="view.next?.dealer"
         :cell="ui?.cell"
         :row-label="rowLabel"
+        :legend="ui?.legend"
         @edit="correct"
       />
       <p class="mut">Tap a round to correct it.</p>
@@ -185,12 +225,19 @@ const statText = (s: StatLine) =>
     <button v-else type="button" class="btn pri" @click="rematch">Rematch · {{ nameOf((game.firstDealer + 1) % players.length) }} deals</button>
   </div>
 
+  <Transition name="flourish">
+    <div v-if="flourish" class="flourish" role="status" @click="flourish = undefined">
+      <span class="fg" aria-hidden="true">{{ flourish.glyph }}</span>
+      <b>{{ flourish.text }}</b>
+    </div>
+  </Transition>
+
   <Sheet
     v-if="draft && draftRound && ui && game"
+    ref="sheet"
     :title="draft.correcting ? `Correct round ${draft.n + 1}` : `${phaseLabel(draft.phase)} · round ${draft.n + 1}`"
     :subtitle="ui.roundLabel(draftRound.info, nameOf(draftRound.ctx.dealer))"
     :issues="issues"
-    :saving="saving"
     :save-label="draft.correcting ? 'Save correction' : `Save ${phaseLabel(draft.phase).toLowerCase()}`"
     @save="submit"
     @close="draft = undefined"
@@ -211,5 +258,21 @@ const statText = (s: StatLine) =>
 <style scoped>
 .final { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px; text-align: center; }
 .final b { font: 800 24px var(--f-display); }
-.crown { color: var(--gold); font-size: 30px; line-height: 1; }
+.final { animation: rise .4s var(--ease) both; }
+.crown { color: var(--gold); font-size: 30px; line-height: 1; animation: crown .7s .15s var(--spring) both; }
+@keyframes crown { from { transform: translateY(-40px) rotate(-20deg); opacity: 0; } }
+.offline { display: flex; align-items: center; gap: 10px; margin: 0; padding: 9px 12px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: 14px; }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.drop-enter-active, .drop-leave-active { transition: opacity .2s, transform .25s var(--ease); }
+.drop-enter-from, .drop-leave-to { opacity: 0; transform: translateY(-6px); }
+
+/* The moon (or any flourish) sweeps across, then fades. */
+.flourish { position: fixed; inset: 0; z-index: 30; display: grid; place-content: center; justify-items: center; gap: 10px; pointer-events: auto; background: radial-gradient(circle at 50% 45%, rgba(8, 20, 16, .55), rgba(8, 20, 16, .2) 60%, transparent); }
+.flourish .fg { font-size: 96px; line-height: 1; color: var(--gold); text-shadow: 0 0 40px rgba(226, 181, 90, .7); animation: sweep 1.6s var(--ease) both; }
+.flourish b { font: 800 26px var(--f-display); color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, .5); animation: rise .5s .35s var(--ease) both; }
+@keyframes sweep { from { transform: translate(-60vw, 30px) rotate(-40deg) scale(.6); opacity: 0; } 55% { transform: translate(4vw, -6px) rotate(6deg) scale(1.1); opacity: 1; } }
+.flourish-enter-active { transition: opacity .2s; }
+.flourish-leave-active { transition: opacity .5s; }
+.flourish-enter-from, .flourish-leave-to { opacity: 0; }
 </style>

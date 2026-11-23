@@ -1,7 +1,9 @@
-export type { ConfigField, EditorProps, GameUi, TablePlayer } from './game-ui';
+export type { CardFace, ConfigField, EditorProps, Flourish, GameHand, GameUi, TablePlayer } from './game-ui';
 export { default as AppBar } from './components/AppBar.vue';
 export { default as BidChips } from './components/BidChips.vue';
+export { default as CountUp } from './components/CountUp.vue';
 export { default as CountPerPlayer } from './components/CountPerPlayer.vue';
+export { default as PlayingCard } from './components/PlayingCard.vue';
 export { default as PlayerPick } from './components/PlayerPick.vue';
 export { default as RulesForm } from './components/RulesForm.vue';
 export { default as ScoreGrid } from './components/ScoreGrid.vue';
@@ -9,4 +11,5 @@ export { default as Sheet } from './components/Sheet.vue';
 export { default as StandingsStrip } from './components/StandingsStrip.vue';
 export { default as Stepper } from './components/Stepper.vue';
 export { default as SumCheck } from './components/SumCheck.vue';
+export { default as TitleCard } from './components/TitleCard.vue';
 export { default as TricksVsBids } from './components/TricksVsBids.vue';

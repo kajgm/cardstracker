@@ -17,6 +17,7 @@
   --card-ink: #14201b;
   --card-red: #c4122f;
   --card-blue: #1d4f9e;
+  --card-edge: rgba(20, 32, 27, .14);
   --hearts: #c4122f; --on-hearts: #ffffff; --hearts-soft: #fbe8eb;
   --tenone: #1d4f9e; --on-tenone: #ffffff; --tenone-soft: #e7eefa;
   --table: #12694d; --on-table: #ffffff; --table-soft: #e1f1e9;
@@ -32,6 +33,9 @@
   --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   --f-num: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  /* Motion: a slight overshoot for things that land, a plain ease-out for the rest. */
+  --spring: cubic-bezier(.2, .9, .25, 1.12);
+  --ease: cubic-bezier(.2, .7, .2, 1);
   --accent: var(--table); --on-accent: var(--on-table); --accent-soft: var(--table-soft);
   color-scheme: light;
 }
@@ -39,7 +43,7 @@
   :root {
     --bg: #0a120f; --surface: #111c18; --surface-2: #182621;
     --ink: #e2ebe7; --ink-2: #a1b4ac; --ink-3: #7f938a; --line: #223129; --line-2: #354a41;
-    --felt: #0f4232; --felt-2: #0b3326;
+    --felt: #0f4232; --felt-2: #0b3326; --card-edge: rgba(0, 0, 0, .4);
     --hearts: #ff6b80; --on-hearts: #2b0710; --hearts-soft: #36181e;
     --tenone: #85a9ff; --on-tenone: #0b1a3d; --tenone-soft: #17223a;
     --table: #4cc79a; --on-table: #05271b; --table-soft: #13302a;
@@ -56,6 +60,9 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
+/* No double-tap zoom delay; pinch zoom still works. */
+html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+html.sheet-open { overflow: hidden; }
 body {
   background: var(--bg);
   color: var(--ink);
@@ -78,9 +85,11 @@ a { color: var(--accent); }
 .num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--ink-3)); flex: none; }
 .btn { min-height: 46px; padding: 0 18px; border-radius: 13px; border: 1px solid var(--line-2); background: var(--surface); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--ink); }
+.btn, .chip { transition: transform .12s var(--ease), background-color .15s, color .15s, border-color .15s; }
+.btn:active:not(:disabled), .chip:active:not(:disabled) { transform: scale(.96); }
 .btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
 .btn:disabled { opacity: .45; cursor: default; }
-.chip { min-width: 40px; min-height: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface); cursor: pointer; font: 600 17px var(--f-num); color: var(--ink-2); }
+.chip { min-width: 44px; min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface); cursor: pointer; font: 600 17px var(--f-num); color: var(--ink-2); }
 .chip.on { background: var(--accent); color: var(--on-accent); border-color: transparent; }
 .chip:disabled { border-style: dashed; background: var(--surface-2); color: var(--ink-3); text-decoration: line-through; cursor: not-allowed; }
 .mcard { width: 28px; height: 38px; border-radius: 5px; background: var(--card-face); color: var(--card-ink); border: 1px solid var(--line-2); display: inline-grid; place-items: center; font: 700 16px/1 var(--f-num); flex: none; }
@@ -90,5 +99,15 @@ a { color: var(--accent); }
 .actionbar > * { max-width: 40rem; }
 .actionbar .btn.pri { flex: 1; }
 .error { background: var(--bad-soft); color: var(--bad); border-radius: 12px; padding: 10px 12px; margin: 0; }
+/* Loading placeholder */
+.skel { background: linear-gradient(90deg, var(--surface-2) 30%, var(--surface) 50%, var(--surface-2) 70%) 0 0 / 300% 100%; border-radius: 12px; animation: shimmer 1.4s linear infinite; }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+/* Page entrance */
+.enter { animation: rise .35s var(--ease) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+}
 .g-hearts { --accent: var(--hearts); --on-accent: var(--on-hearts); --accent-soft: var(--hearts-soft); }
 .g-tenone { --accent: var(--tenone); --on-accent: var(--on-tenone); --accent-soft: var(--tenone-soft); }

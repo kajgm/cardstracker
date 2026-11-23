@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { CountPerPlayer, PlayerPick, type EditorProps } from '@cards/ui';
 import hearts, { moonShooter, type HeartsConfig, type HeartsEntry } from '../rules';
 
-// Two questions instead of four sums: who took the Q♠, and how many hearts each.
+// Two questions instead of four sums: who took the queen of spades, and how many hearts each.
 const props = defineProps<EditorProps<HeartsEntry, HeartsConfig>>();
 const emit = defineEmits<{ 'update:modelValue': [value: Partial<HeartsEntry>] }>();
 
@@ -26,12 +26,8 @@ const preview = computed(() => {
 
 <template>
   <div class="grp">
-    <p class="lbl">Who took the <span class="mcard q">Q♠</span></p>
+    <p class="lbl">Who took the queen of spades?</p>
     <PlayerPick :players="players" :model-value="modelValue.queen" label="Who took the queen of spades" @update:model-value="set({ queen: $event })" />
-  </div>
-  <div v-if="config.jackMinus10" class="grp">
-    <p class="lbl">Who took the <span class="mcard q red">J♦</span></p>
-    <PlayerPick :players="players" :model-value="modelValue.jack" label="Who took the jack of diamonds" @update:model-value="set({ jack: $event })" />
   </div>
   <CountPerPlayer
     :players="players"
@@ -52,13 +48,12 @@ const preview = computed(() => {
       </button>
     </div>
   </div>
-  <p v-else class="mut">All 13 hearts and the Q♠ to one player counts as a moon.</p>
+  <p v-else class="mut">Taking all 13 hearts and the queen of spades shoots the moon.</p>
 </template>
 
 <style scoped>
 .grp { display: flex; flex-direction: column; gap: 8px; }
 .lbl { display: flex; align-items: center; gap: 8px; }
-.q { width: auto; height: auto; padding: 3px 5px; font-size: 14px; letter-spacing: 0; text-transform: none; }
 .moon { background: var(--gold-soft); border-radius: 12px; padding: 10px 12px; }
 .moon p { margin: 0 0 8px; }
 .choice { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

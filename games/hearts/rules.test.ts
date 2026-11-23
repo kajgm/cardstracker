@@ -25,16 +25,18 @@ describe('hearts scoring', () => {
     expect(hearts.score({ queen: 0, hearts: [13, 0, 0, 0] }, ctx(config))).toEqual([-26, 0, 0, 0]);
   });
 
-  it('takes 10 off for the J♦ when that variant is on', () => {
-    const config = cfg({ jackMinus10: true });
-    expect(hearts.score({ queen: 0, hearts: [1, 2, 4, 6], jack: 2 }, ctx(config))).toEqual([14, 2, -6, 6]);
+  it('ignores a jack of diamonds left in an old config or entry', () => {
+    const config = hearts.config.schema.parse({ target: 100, moon: 'choose', jackMinus10: true }) as HeartsConfig;
+    expect(config).toEqual({ target: 100, moon: 'choose' });
+    const e = { queen: 0, hearts: [1, 2, 4, 6], jack: 2 } as HeartsEntry;
+    expect(hearts.score(e, ctx(config))).toEqual([14, 2, 4, 6]);
   });
 });
 
 describe('hearts validation', () => {
   it('needs the queen and 13 hearts', () => {
     expect(result({ hearts: [3, 3, 3, 3] }).map((i) => i.message)).toEqual([
-      'Pick who took the Q♠',
+      'Choose who took the queen of spades',
       'Hearts add up to 12, not 13',
     ]);
     expect(result({ queen: 2, hearts: [3, 3, 3, 4] })).toEqual([]);
