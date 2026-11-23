@@ -7,7 +7,7 @@ const ui: GameUi = {
   glyph: '10',
   ink: 'blue',
   accent: '--tenone',
-  blurb: 'Bid your tricks exactly, from 10 cards down to 1.',
+  blurb: "Ten hands, from ten cards down to one. Bid exactly what you'll take.",
   editors: { bids: BidsEditor, tricks: TricksEditor },
   cell: TenoneCell,
   startEntry: (phase, seats, saved) => {

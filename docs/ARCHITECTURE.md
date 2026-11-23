@@ -50,9 +50,9 @@ to `games/index.ts` and one to `games/ui.ts`, release.
 ## House rules as built
 
 **Hearts**: 3–6 players, play to 100, lowest wins, ties share the win. 1 per
-heart, 13 for the Q♠. Moon (all 13 hearts + Q♠) defaults to the shooter
+heart, 13 for the queen of spades. Moon (all 13 hearts + the queen) defaults to the shooter
 choosing +26 to everyone else or −26 for themselves; can be fixed either way.
-Optional J♦ −10. Passing: 4 players left/right/across/keep, otherwise
+No jack of diamonds rule (removed Nov 2026; old configs still load). Passing: 4 players left/right/across/keep, otherwise
 left/right/keep.
 
 **10-1**: 3–7 players, 10 cards down to 1 (option: back up to 10), first hand

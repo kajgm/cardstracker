@@ -59,7 +59,7 @@ describe('api', () => {
     const created = await call<GameDto>('POST', '/api/games', { type: 'hearts', playerIds, firstDealer: 0 });
     expect(created.status).toBe(201);
     const game = created.body;
-    expect(game.config).toEqual({ target: 100, moon: 'choose', jackMinus10: false });
+    expect(game.config).toEqual({ target: 100, moon: 'choose' });
 
     const socket: Socket = connect(base, { transports: ['websocket'] });
     await new Promise<void>((done) => socket.on('connect', () => done()));

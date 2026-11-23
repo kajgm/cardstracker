@@ -55,7 +55,7 @@ export type StatDef<Entry> =
   | {
       kind: 'count';
       label: string;
-      /** Seats that score one this round, e.g. who took the Q♠. */
+      /** Seats that score one this round, e.g. who took the queen of spades. */
       seatsOf(entry: Entry): Seat[];
     }
   | {

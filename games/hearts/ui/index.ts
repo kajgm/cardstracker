@@ -13,7 +13,7 @@ const ui: GameUi = {
   glyph: '♥',
   ink: 'red',
   accent: '--hearts',
-  blurb: 'Dodge hearts and the Q♠. Lowest score wins.',
+  blurb: 'Dodge the hearts and the queen of spades. Lowest score wins.',
   editors: { result: ResultEditor },
   cell: HeartsCell,
   startEntry: (_phase, seats, saved) => saved ?? { hearts: new Array(seats).fill(0) },
@@ -29,7 +29,6 @@ const ui: GameUi = {
         { value: 'self-26', label: '−26 for the shooter' },
       ],
     },
-    { key: 'jackMinus10', label: 'J♦ is −10', hint: 'Omnibus Hearts', kind: 'toggle' },
   ],
   roundLabel: (info, dealer) => `${PASS_LABEL[String(info.pass)] ?? ''} · ${dealer} deals`,
 };
