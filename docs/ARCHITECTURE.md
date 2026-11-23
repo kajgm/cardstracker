@@ -11,10 +11,9 @@ diagrams and phone mockups: https://claude.ai/artifact/X2dkNWFerfcc8VScq5y36C
   Socket.IO under `/socket.io`. One SQLite file (`node:sqlite`, WAL) on a volume.
 - `/<game>` is a client route looked up in the game registry. Adding a game
   never touches the deployment (DNS, proxy, network rules).
-- Sign-in happens in an authenticating reverse proxy in front of the app. The
-  server reads the user's email from `Cf-Access-Authenticated-User-Email`
-  (Cloudflare Access's header name; any proxy can set it) for "entered by"; it
-  grants nothing. Players are roster entries, not logins.
+- Public, no sign-in. Each device picks a name, sent as `X-Guest-Name` and
+  recorded as `guest:<name>` for "created by" / "entered by"; it grants nothing.
+  Players are roster entries, not logins. Admin actions need `ADMIN_TOKEN`.
 
 ## Repository
 
@@ -108,8 +107,8 @@ no averages) and `GET /api/records` (win streak, each game's best final score,
 each game's own stats summed; rate stats need 10 rounds).
 
 Backups: once a day the server writes `VACUUM INTO /data/backups/cards-YYYY-MM-DD.db`
-and keeps 14. Owner-only `GET /api/export` dumps everything as JSON
-(`OWNER_EMAIL`).
+and keeps 14. `GET /api/export` dumps everything as JSON and `DELETE /api/games/:id`
+hides a game; both need `Authorization: Bearer $ADMIN_TOKEN`.
 
 ## Deployment
 
@@ -120,14 +119,11 @@ and keeps 14. Owner-only `GET /api/export` dumps everything as JSON
   Socket.IO server). It listens on :3000 as uid 1000, works with a read-only
   root filesystem plus a writable `/tmp`, and keeps its data on a volume at
   `/data`. It needs no outbound network.
-- Put it behind an authenticating reverse proxy that sets
-  `Cf-Access-Authenticated-User-Email`. The server trusts that header, so the
-  proxy must be the only way in and must overwrite any copy a client sends.
-- Without that header (e.g. a public bypass), the client asks for a name and
-  sends it as `X-Guest-Name`; it is recorded as `guest:<name>` in
-  `created_by`/`entered_by` and never counts as the owner.
-- Settings: `OWNER_EMAIL` (may export and purge). Never set `DEV_USER_EMAIL`
-  outside local development.
+- It is public: anyone with the URL can read and change games. Put a rate
+  limit on non-GET `/api` requests at the edge to stop scripted flooding.
+- Settings: `ADMIN_TOKEN` (export and remove games; unset means nobody can).
+- Rows written before the site went public hold Access login emails in
+  `created_by`/`entered_by`; the API returns only `guest:` labels.
 
 ## Where this differs from the proposal
 

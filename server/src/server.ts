@@ -13,8 +13,7 @@ const { http, io } = createApp({
   db,
   clientDir,
   version: process.env.APP_VERSION,
-  ownerEmail: process.env.OWNER_EMAIL,
-  devUserEmail: process.env.DEV_USER_EMAIL,
+  adminToken: process.env.ADMIN_TOKEN || undefined,
 });
 
 // Nightly copy: checked hourly, written once per day, 14 kept on the same volume.

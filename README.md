@@ -9,7 +9,7 @@ Needs Node 26 (`.nvmrc`).
 
 ```sh
 npm install
-cp server/.env.template server/.env   # sets DEV_USER_EMAIL in place of the auth proxy
+cp server/.env.template server/.env   # optional: ADMIN_TOKEN for export and removing games
 npm run dev:server                    # API + sockets on :3000, data in server/data/
 npm run dev:client                    # Vite on :5173, proxies /api and /socket.io
 ```

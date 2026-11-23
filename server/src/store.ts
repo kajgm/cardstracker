@@ -9,7 +9,6 @@ export interface Player {
   id: number;
   name: string;
   color: string;
-  email: string | null;
 }
 
 export interface SeatedPlayer extends Player {
@@ -59,27 +58,23 @@ interface GameRow {
 }
 
 export function listPlayers(db: Db): Player[] {
-  return db.prepare('SELECT id, name, color, email FROM players ORDER BY name').all() as unknown as Player[];
+  return db.prepare('SELECT id, name, color FROM players ORDER BY name').all() as unknown as Player[];
 }
 
-export function addPlayer(db: Db, name: string, email?: string): Player {
+export function addPlayer(db: Db, name: string): Player {
   const clean = name.trim().replace(/\s+/g, ' ');
   if (!clean || clean.length > 24) throw new ApiError(400, 'Names are 1 to 24 characters');
   const existing = db.prepare('SELECT id FROM players WHERE name = ?').get(clean);
   if (existing) throw new ApiError(409, `${clean} is already in the roster`);
   const { n } = db.prepare('SELECT COUNT(*) AS n FROM players').get() as { n: number };
   const info = db
-    .prepare('INSERT INTO players (name, color, email) VALUES (?, ?, ?)')
-    .run(clean, COLORS[n % COLORS.length], email ?? null);
-  return { id: Number(info.lastInsertRowid), name: clean, color: COLORS[n % COLORS.length], email: email ?? null };
+    .prepare('INSERT INTO players (name, color) VALUES (?, ?)')
+    .run(clean, COLORS[n % COLORS.length]);
+  return { id: Number(info.lastInsertRowid), name: clean, color: COLORS[n % COLORS.length] };
 }
 
-export function playerForEmail(db: Db, email: string | undefined): Player | undefined {
-  if (!email) return undefined;
-  return db.prepare('SELECT id, name, color, email FROM players WHERE email = ? COLLATE NOCASE').get(email) as
-    | Player
-    | undefined;
-}
+// Rows from the Access era hold login emails; the site is public, so only guest labels go out.
+const label = (by: string | null) => (by?.startsWith('guest:') ? by : null);
 
 function rulesFor(type: string): AnyGameRules {
   const rules = getGame(type);
@@ -92,7 +87,7 @@ export function getGameDto(db: Db, id: string): GameDto {
   if (!row) throw new ApiError(404, `No game ${id}`);
   const players = db
     .prepare(
-      `SELECT p.id, p.name, p.color, p.email, s.seat, s.side
+      `SELECT p.id, p.name, p.color, s.seat, s.side
        FROM seats s JOIN players p ON p.id = s.player_id WHERE s.game_id = ? ORDER BY s.seat`,
     )
     .all(id) as unknown as SeatedPlayer[];
@@ -103,7 +98,7 @@ export function getGameDto(db: Db, id: string): GameDto {
       entry: string;
       entered_by: string | null;
     }[]
-  ).map((r) => ({ n: r.n, phase: r.phase, entry: JSON.parse(r.entry), enteredBy: r.entered_by }));
+  ).map((r) => ({ n: r.n, phase: r.phase, entry: JSON.parse(r.entry), enteredBy: label(r.entered_by) }));
   return {
     id: row.id,
     type: row.type,
@@ -111,7 +106,7 @@ export function getGameDto(db: Db, id: string): GameDto {
     firstDealer: row.first_dealer,
     status: row.status,
     version: row.version,
-    createdBy: row.created_by,
+    createdBy: label(row.created_by),
     createdAt: row.created_at,
     finishedAt: row.finished_at,
     endedEarly: !!row.ended_early,
