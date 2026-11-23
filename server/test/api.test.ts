@@ -131,6 +131,37 @@ describe('api', () => {
     expect(again.body.config).toEqual(final.body.config);
   });
 
+  it('ends a game early, counts it, and resumes it', async () => {
+    const playerIds = await seatFour();
+    const { body: game } = await call<GameDto>('POST', '/api/games', { type: 'hearts', playerIds });
+    expect((await call('POST', `/api/games/${game.id}/end`, { version: game.version })).status).toBe(400);
+
+    const r = await call<GameDto>('PUT', `/api/games/${game.id}/rounds/0`, { phase: 'result', entry: { queen: 0, hearts: [3, 3, 3, 4] }, version: game.version });
+    const live = (await call<{ id: string; next: { n: number; dealer: string } | null; updatedAt: string }[]>('GET', '/api/games?status=active')).body.find((g) => g.id === game.id);
+    expect(live?.next).toMatchObject({ n: 1, dealer: 'Dad' });
+    expect(live?.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2} /);
+
+    expect((await call('POST', `/api/games/${game.id}/end`, { version: game.version })).status).toBe(409);
+    const ended = await call<GameDto>('POST', `/api/games/${game.id}/end`, { version: r.body.version });
+    expect(ended.body).toMatchObject({ status: 'finished', endedEarly: true });
+    expect((await call('PUT', `/api/games/${game.id}/rounds/1`, { phase: 'result', entry: { queen: 0, hearts: [3, 3, 3, 4] }, version: ended.body.version })).status).toBe(422);
+
+    const all = await call<{ name: string; won: number; avg: number | null; form: number[] }[]>('GET', '/api/stats/all');
+    const dad = all.body.find((p) => p.name === 'Dad')!;
+    expect(dad.avg).toBeNull();
+    expect(dad.form.length).toBeGreaterThanOrEqual(2);
+    const hearts = await call<{ name: string; won: number; avg: number }[]>('GET', '/api/stats/hearts');
+    // Dad and Ana tie on 3 and share the win; the name breaks the tie in the list.
+    expect(hearts.body.slice(0, 2)).toMatchObject([{ name: 'Ana', won: 1, avg: 3 }, { name: 'Dad', won: 1, avg: 3 }]);
+    const recs = await call<{ label: string; value: string; name: string }[]>('GET', '/api/records');
+    expect(recs.body).toContainEqual(expect.objectContaining({ label: 'Best Hearts game', value: '3' }));
+    expect(recs.body).toContainEqual(expect.objectContaining({ label: 'Took the queen of spades', value: '1', name: 'Mom' }));
+
+    const resumed = await call<GameDto>('DELETE', `/api/games/${game.id}/end?version=${ended.body.version}`);
+    expect(resumed.body).toMatchObject({ status: 'active', endedEarly: false });
+    expect((await call<unknown[]>('GET', '/api/stats/hearts')).body).toHaveLength(0);
+  });
+
   it('refuses unknown games and keeps export for the owner', async () => {
     expect((await call('GET', '/api/stats/poker')).status).toBe(404);
     expect((await call('GET', '/api/export')).status).toBe(403);

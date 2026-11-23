@@ -103,6 +103,18 @@ export function createApp(opts: AppOptions): { http: HttpServer; io: IoServer } 
     push(game);
     res.json(game);
   });
+  api.post('/games/:id/end', (req, res) => {
+    const { version: v } = parse(z.object({ version: z.number().int() }), req.body);
+    const game = store.endGame(db, req.params.id, v);
+    push(game);
+    res.json(game);
+  });
+  api.delete('/games/:id/end', (req, res) => {
+    const { version: v } = parse(z.object({ version: z.coerce.number().int() }), req.query);
+    const game = store.resumeGame(db, req.params.id, v);
+    push(game);
+    res.json(game);
+  });
   api.post('/games/:id/rematch', (req, res) => {
     res.status(201).json(store.rematch(db, req.params.id, userOf(req)));
   });
@@ -110,6 +122,9 @@ export function createApp(opts: AppOptions): { http: HttpServer; io: IoServer } 
     if (!isOwner(req)) throw new store.ApiError(403, 'Only the owner can remove games');
     store.hideGame(db, req.params.id);
     res.status(204).end();
+  });
+  api.get('/records', (_req, res) => {
+    res.json(store.records(db));
   });
   api.get('/stats/:type', (req, res) => {
     res.json(store.leaderboard(db, req.params.type));
