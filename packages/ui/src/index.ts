@@ -1,6 +1,10 @@
 export type { CardFace, ConfigField, EditorProps, Flourish, GameHand, GameUi, TablePlayer } from './game-ui';
 export { default as AppBar } from './components/AppBar.vue';
 export { default as BidChips } from './components/BidChips.vue';
+export { default as Felt } from './components/Felt.vue';
+export { default as Leaderboard, type LeaderEntry } from './components/Leaderboard.vue';
+export { default as SuitIcon } from './components/SuitIcon.vue';
+export { SUIT_PATHS, type Suit } from './suits';
 export { default as CountUp } from './components/CountUp.vue';
 export { default as CountPerPlayer } from './components/CountPerPlayer.vue';
 export { default as PlayingCard } from './components/PlayingCard.vue';
