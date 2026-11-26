@@ -3,8 +3,9 @@
 import type { AnyGameRules } from '@cards/engine';
 import hearts from './hearts/rules';
 import tenone from './tenone/rules';
+import skyjo from './skyjo/rules';
 
-export const games: Record<string, AnyGameRules> = { hearts, tenone };
+export const games: Record<string, AnyGameRules> = { hearts, tenone, skyjo };
 
 export function getGame(id: string): AnyGameRules | undefined {
   return Object.hasOwn(games, id) ? games[id] : undefined;
