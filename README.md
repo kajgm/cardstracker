@@ -1,6 +1,6 @@
 # cardstracker
 
-Score sheets for card games at `cards.kajgm.com/<game>`: Hearts and 10-1 so far.
+Score sheets for card games at `cards.kajgm.com/<game>`: Hearts, 10-1 and Skyjo so far.
 Phones at the table share one live sheet. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Develop

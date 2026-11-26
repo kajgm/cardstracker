@@ -75,6 +75,11 @@ Exact bid scores 10 + bid, a miss 0 (option: 1 per trick, +10 if exact).
 Option: Newfie poker on the 1-card hand (card on your forehead, bid without
 looking); it changes the round label and editor hint, not the scoring.
 
+**Skyjo**: 2–8 players, play to 100, lowest wins. Each round you pick who went
+out and type each player's card total (cleared columns left out). Whoever went
+out scores double unless their total is strictly the lowest, and only when it
+is above zero.
+
 ## Home page
 
 A felt header (lamp light drifting over faint suits) holds the wordmark, a

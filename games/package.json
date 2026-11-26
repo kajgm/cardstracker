@@ -8,7 +8,8 @@
     ".": "./index.ts",
     "./ui": "./ui.ts",
     "./hearts/rules": "./hearts/rules.ts",
-    "./tenone/rules": "./tenone/rules.ts"
+    "./tenone/rules": "./tenone/rules.ts",
+    "./skyjo/rules": "./skyjo/rules.ts"
   },
   "dependencies": {
     "zod": "^4.6.7"

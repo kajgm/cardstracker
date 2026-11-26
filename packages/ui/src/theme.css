@@ -28,6 +28,7 @@
   --card-edge: rgba(20, 32, 27, .14);
   --hearts: #c4122f; --on-hearts: #ffffff; --hearts-soft: #fbe8eb;
   --tenone: #1d4f9e; --on-tenone: #ffffff; --tenone-soft: #e7eefa;
+  --skyjo: #6a3fa3; --on-skyjo: #ffffff; --skyjo-soft: #efe8f8;
   --table: #12694d; --on-table: #ffffff; --table-soft: #e1f1e9;
   --gold: #946609; --on-gold: #ffffff; --gold-soft: #f6ecd5; --gold-ink: #e2b55a;
   --live: #ff6b6b;
@@ -65,6 +66,7 @@
     --felt: #0f4232; --felt-2: #0b3326; --card-edge: rgba(0, 0, 0, .4);
     --hearts: #ff6b80; --on-hearts: #2b0710; --hearts-soft: #36181e;
     --tenone: #85a9ff; --on-tenone: #0b1a3d; --tenone-soft: #17223a;
+    --skyjo: #c3a3f5; --on-skyjo: #22103d; --skyjo-soft: #251b36;
     --table: #4cc79a; --on-table: #05271b; --table-soft: #13302a;
     --gold: #e2b55a; --on-gold: #2a1d05; --gold-soft: #302815;
     --good: #57c98f; --good-soft: #13291f;
@@ -139,3 +141,4 @@ a { color: var(--accent); }
 }
 .g-hearts { --accent: var(--hearts); --on-accent: var(--on-hearts); --accent-soft: var(--hearts-soft); }
 .g-tenone { --accent: var(--tenone); --on-accent: var(--on-tenone); --accent-soft: var(--tenone-soft); }
+.g-skyjo { --accent: var(--skyjo); --on-accent: var(--on-skyjo); --accent-soft: var(--skyjo-soft); }
