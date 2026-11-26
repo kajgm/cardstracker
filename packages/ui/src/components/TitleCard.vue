@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { GameHand } from '../game-ui';
+import NumberCard from './NumberCard.vue';
 import PlayingCard from './PlayingCard.vue';
 
 // A game's title card: a hand of cards on baize that tells the game, then the
@@ -14,7 +15,7 @@ withDefaults(
   <component :is="tag" class="tc" :class="[size, `l-${hand.layout}`, { pressable }]">
     <div class="fan" aria-hidden="true">
       <div v-for="(c, i) in hand.cards" :key="i" class="mc" :style="{ '--i': i, '--n': hand.cards.length }">
-        <div class="lift"><PlayingCard :card="c" /></div>
+        <div class="lift"><NumberCard v-if="'value' in c" :value="c.value" /><PlayingCard v-else :card="c" /></div>
       </div>
     </div>
     <div class="body">

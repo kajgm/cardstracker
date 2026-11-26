@@ -32,10 +32,15 @@ export interface CardFace {
   suit: 'hearts' | 'spades' | 'diamonds' | 'clubs';
 }
 
+/** A numbered card (Skyjo: −2…12), its face colored by value. */
+export interface NumberFace {
+  value: number;
+}
+
 /** The hand on a game's title card: up to four cards, fanned or shrinking left to right. */
 export interface GameHand {
   layout: 'fan' | 'stair';
-  cards: CardFace[];
+  cards: (CardFace | NumberFace)[];
 }
 
 /** A moment worth marking when a round lands, e.g. a moon in Hearts. */

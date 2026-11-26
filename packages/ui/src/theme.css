@@ -39,6 +39,7 @@
   --court-ink: #14201b; --court-sky: #f6efe0; --court-blue: #1d4f9e; --court-red: #c4122f; --court-red-dark: #8f0c22;
   --court-gold: #e0a526; --court-gold-dark: #946609; --court-skin: #f2d3b6; --court-hair: #2b1d14;
   --court-beard: #6b4423; --court-beard-dark: #4a2e16; --court-green: #17784a; --court-steel: #8a99a3; --court-ermine: #fbfdfc;
+  --num-neg: #2d3f9e; --num-zero: #4fb3e8; --num-low: #3fa34d; --num-mid: #e8c22a; --num-high: #d7352b;
   /* The moon (or any flourish) overlay. */
   --flourish-scrim: rgba(8, 20, 16, .55); --flourish-scrim-2: rgba(8, 20, 16, .2);
   --flourish-glow: rgba(226, 181, 90, .7); --flourish-ink: #f5fbf8; --flourish-shadow: rgba(0, 0, 0, .5);
