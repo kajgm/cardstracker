@@ -1,4 +1,4 @@
-export type { CardFace, ConfigField, EditorProps, Flourish, GameHand, GameUi, TablePlayer } from './game-ui';
+export type { CardFace, ConfigField, EditorProps, Flourish, GameHand, GameUi, NumberFace, TablePlayer } from './game-ui';
 export { default as AppBar } from './components/AppBar.vue';
 export { default as BidChips } from './components/BidChips.vue';
 export { default as Felt } from './components/Felt.vue';
