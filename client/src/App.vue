@@ -33,7 +33,7 @@ const reload = () => window.location.reload();
     <form v-if="askName" class="guest" aria-labelledby="guest-title" @submit.prevent="saveName">
       <label id="guest-title" for="guest-name" class="title">Your name</label>
       <p class="mut">Shown next to the games and rounds you enter.</p>
-      <input id="guest-name" v-model="guestInput" maxlength="24" placeholder="e.g. Sam" autocomplete="nickname" enterkeyhint="done" />
+      <input id="guest-name" v-model="guestInput" maxlength="24" placeholder="e.g. Jack" autocomplete="nickname" enterkeyhint="done" />
       <div class="acts">
         <button type="button" class="btn" @click="askName = false">Not now</button>
         <button type="submit" class="btn pri" :disabled="!guestInput.trim()">Save</button>
